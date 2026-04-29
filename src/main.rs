@@ -9,6 +9,10 @@ use tao::event_loop::{ControlFlow, EventLoop};
 
 fn main() {
     dotenvy::dotenv().ok();
+    if std::env::var("ANTHROPIC_API_KEY").is_err() {
+        eprintln!("error: ANTHROPIC_API_KEY is not set");
+        std::process::exit(1);
+    }
     let rx = hotkey::run();
     let rt = tokio::runtime::Runtime::new().unwrap();
 

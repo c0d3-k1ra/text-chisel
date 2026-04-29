@@ -29,19 +29,18 @@ fn validate_text(text: &str) -> anyhow::Result<()> {
 
 pub fn paste_text(text: &str) -> anyhow::Result<()> {
     let mut clipboard = Clipboard::new()?;
+    let original = clipboard.get_text().ok();
     clipboard.set_text(text.to_string())?;
     std::thread::sleep(std::time::Duration::from_millis(100));
     let mut enigo = Enigo::new(&Settings::default())?;
     enigo.key(Key::Meta, enigo::Direction::Press)?;
     enigo.key(Key::Unicode('v'), enigo::Direction::Click)?;
     enigo.key(Key::Meta, enigo::Direction::Release)?;
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    if let Some(original_text) = original {
+        clipboard.set_text(original_text)?;
+    }
     Ok(())
-}
-
-#[allow(dead_code)]
-pub fn read_clipboard() -> anyhow::Result<String> {
-    let mut clipboard = Clipboard::new()?;
-    Ok(clipboard.get_text()?)
 }
 
 #[cfg(test)]

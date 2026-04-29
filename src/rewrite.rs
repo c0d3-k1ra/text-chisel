@@ -42,7 +42,9 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
         }],
     };
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()?;
     let response = client
         .post("https://api.anthropic.com/v1/messages")
         .header("x-api-key", &api_key)

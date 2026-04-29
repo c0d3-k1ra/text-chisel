@@ -11,6 +11,8 @@ pub enum HotKeyEvent {
 pub fn run() -> mpsc::Receiver<HotKeyEvent> {
     let (tx, rx) = mpsc::channel();
     let manager = register_hotkey().unwrap();
+    // GlobalHotKeyManager must stay alive for the hotkey to remain registered.
+    // Leaking it is intentional — it lives for the entire process lifetime.
     Box::leak(Box::new(manager));
 
     thread::spawn(move || {

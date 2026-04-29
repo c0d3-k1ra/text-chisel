@@ -12,6 +12,7 @@ Guidelines:\n\
   - Professional: neutral and clear, polished but not authoritative — do not escalate urgency or assertiveness beyond what the original conveys\n\
   - Assertive: firm and direct, highlight impact\n\
   - Concise: strip to the minimum, cut every unnecessary word\n\
+  - Gen Z: rewrite in Gen Z voice. Rules: lowercase by default, capitalize only for sarcastic emphasis. Drop most end-of-sentence periods. Use Gen Z vocab where it fits naturally (no cap, fr, ngl, lowkey, highkey, deadass, bet, slay, ate, mid, bussin, sus, valid, based, cooked, delulu, rizz, the ick, it's giving, main character, periodt). Reaction phrasing allowed: \"i'm dead\", \"i'm crying\", \"not me [verb-ing]\", \"the way [X]\", \"this is sending me\", \"tell me why\", \"the audacity\", \"hear me out\". Sprinkle emojis sparingly, max 1-2 per sentence: 💀 😭 ✨ 💅 🔥 🤡 🥲 🙏. Shorthand allowed: tbh, istg, idk, ofc, omg. Self-aware irony and hyperbole encouraged. Match the original's energy — formal email becomes professional but make it gen z, casual rant gets full chaos. Never explain a slang term.\n\
 - Do not add new facts or exaggerate.\n\
 - Preserve all URLs, links, names, numbers, and identifiers exactly as they appear.\n\
 - Do NOT assume format.\n\n\

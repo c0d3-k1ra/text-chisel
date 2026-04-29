@@ -1,13 +1,51 @@
-use tray_icon::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tray_icon::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
+
+pub const TONES: &[&str] = &["Professional", "Polite", "Assertive", "Concise", "Gen Z"];
+const DEFAULT_TONE: &str = "Professional";
 
 pub struct Tray {
     pub quit_id: tray_icon::menu::MenuId,
+    pub tone_ids: Vec<(tray_icon::menu::MenuId, &'static str)>,
+    tone_items: Vec<CheckMenuItem>,
     _icon: tray_icon::TrayIcon,
+}
+
+impl Tray {
+    pub fn set_tone(&self, tone: &str) {
+        for (item, t) in self.tone_items.iter().zip(TONES.iter()) {
+            item.set_checked(*t == tone);
+        }
+    }
 }
 
 pub fn build() -> Tray {
     let icon = load_icon();
-    let (menu, quit_id) = build_menu();
+    let hotkey_item = MenuItem::new("⌘⌥R  Rewrite selected text", false, None);
+    let quit_item = MenuItem::new("Quit", true, None);
+    let quit_id = quit_item.id().clone();
+
+    let tone_items: Vec<CheckMenuItem> = TONES
+        .iter()
+        .map(|t| CheckMenuItem::new(*t, true, *t == DEFAULT_TONE, None))
+        .collect();
+
+    let tone_ids: Vec<(tray_icon::menu::MenuId, &'static str)> = tone_items
+        .iter()
+        .zip(TONES.iter())
+        .map(|(item, t)| (item.id().clone(), *t))
+        .collect();
+
+    let menu = Menu::new();
+    menu.append(&hotkey_item)
+        .expect("failed to append hotkey item");
+    menu.append(&PredefinedMenuItem::separator())
+        .expect("failed to append separator");
+    for item in &tone_items {
+        menu.append(item).expect("failed to append tone item");
+    }
+    menu.append(&PredefinedMenuItem::separator())
+        .expect("failed to append separator");
+    menu.append(&quit_item).expect("failed to append quit item");
 
     let _icon = tray_icon::TrayIconBuilder::new()
         .with_icon(icon)
@@ -17,7 +55,12 @@ pub fn build() -> Tray {
         .build()
         .expect("failed to create tray icon");
 
-    Tray { quit_id, _icon }
+    Tray {
+        quit_id,
+        tone_ids,
+        tone_items,
+        _icon,
+    }
 }
 
 fn load_icon() -> tray_icon::Icon {
@@ -31,14 +74,4 @@ fn load_icon() -> tray_icon::Icon {
         &mut pixmap.as_mut(),
     );
     tray_icon::Icon::from_rgba(pixmap.data().to_vec(), 44, 44).expect("failed to create tray icon")
-}
-
-fn build_menu() -> (Menu, tray_icon::menu::MenuId) {
-    let hotkey_item = MenuItem::new("⌘⌥R  Rewrite selected text", false, None);
-    let quit_item = MenuItem::new("Quit", true, None);
-    let quit_id = quit_item.id().clone();
-    let menu = Menu::new();
-    menu.append_items(&[&hotkey_item, &PredefinedMenuItem::separator(), &quit_item])
-        .expect("failed to build tray menu");
-    (menu, quit_id)
 }

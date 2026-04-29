@@ -4,10 +4,12 @@ mod prompts;
 mod rewrite;
 mod tray;
 
+use std::sync::{Arc, Mutex};
+
 use hotkey::HotKeyEvent;
 use tao::event_loop::{ControlFlow, EventLoop};
 
-fn handle_hotkey(rt: &tokio::runtime::Runtime) {
+fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
     let text = match clipboard::get_selected_text() {
         Ok(t) => {
             eprintln!("copied: {:?}", t);
@@ -19,7 +21,7 @@ fn handle_hotkey(rt: &tokio::runtime::Runtime) {
         }
     };
 
-    let rewritten = match rt.block_on(rewrite::rewrite(&text, "Professional")) {
+    let rewritten = match rt.block_on(rewrite::rewrite(&text, tone)) {
         Ok(r) => {
             eprintln!("received: {:?}", r);
             r
@@ -46,6 +48,7 @@ fn main() {
     let rx = hotkey::run();
     let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
     let tray = tray::build();
+    let selected_tone: Arc<Mutex<&'static str>> = Arc::new(Mutex::new("Professional"));
 
     let event_loop = EventLoop::new();
     event_loop.run(move |_event, _, control_flow| {
@@ -53,12 +56,18 @@ fn main() {
 
         if let Ok(HotKeyEvent::RewriteTriggered) = rx.try_recv() {
             eprintln!("hotkey fired");
-            handle_hotkey(&rt);
+            let tone = *selected_tone.lock().unwrap();
+            handle_hotkey(&rt, tone);
         }
 
         if let Ok(event) = tray_icon::menu::MenuEvent::receiver().try_recv() {
             if event.id == tray.quit_id {
                 std::process::exit(0);
+            }
+            if let Some((_, tone)) = tray.tone_ids.iter().find(|(id, _)| *id == event.id) {
+                eprintln!("tone selected: {}", tone);
+                *selected_tone.lock().unwrap() = tone;
+                tray.set_tone(tone);
             }
         }
     });

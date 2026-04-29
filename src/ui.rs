@@ -1,5 +1,6 @@
-use crate::hotkey::HotKeyEvent;
 use std::sync::mpsc;
+
+use crate::hotkey::HotKeyEvent;
 
 enum AppState {
     WaitingForHotkey,

@@ -1,9 +1,8 @@
-use global_hotkey::{
-    GlobalHotKeyEvent, GlobalHotKeyManager,
-    hotkey::{Code, HotKey, Modifiers},
-};
 use std::sync::mpsc;
 use std::thread;
+
+use global_hotkey::hotkey::{Code, HotKey, Modifiers};
+use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager};
 
 pub enum HotKeyEvent {
     RewriteTriggered,

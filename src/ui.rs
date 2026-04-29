@@ -30,6 +30,10 @@ impl eframe::App for App {
                     println!("Selected tone: {}", tone);
                 }
             }
+
+            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                self.visible = false;
+            }
         }
     }
 }

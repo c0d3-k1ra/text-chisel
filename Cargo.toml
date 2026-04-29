@@ -10,8 +10,6 @@ eframe = "0.34.1"
 egui = "0.34.1"
 enigo = "0.6.1"
 global-hotkey = "0.7.0"
-objc2 = "0.6.4"
-objc2-app-kit = { version = "0.3.2", features = ["NSApplication"] }
 
 [dev-dependencies]
 assert_cmd = "2.2.1"

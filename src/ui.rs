@@ -1,8 +1,16 @@
 use crate::hotkey;
 use std::sync::mpsc;
+
+enum AppState {
+    PickingTone,
+    Loading(String),
+    Done(String),
+    Error(String),
+}
+
 pub struct App {
     receiver: mpsc::Receiver<hotkey::HotKeyEvent>,
-    visible: bool,
+    state: AppState,
 }
 
 const TONES: &[(&str, &str)] = &[
@@ -17,23 +25,42 @@ const TONES: &[(&str, &str)] = &[
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if let Ok(_) = self.receiver.try_recv() {
-            self.visible = true;
+            self.state = AppState::PickingTone;
             ui.ctx()
                 .send_viewport_cmd(egui::ViewportCommand::Visible(true));
         }
 
-        if self.visible {
-            ui.label("Rewrite as:");
-            ui.add_space(8.0);
-            for (key, tone) in TONES {
-                if ui.button(format!("[{}] {}", key, tone)).clicked() {
-                    println!("Selected tone: {}", tone);
+        let mut selected_tone: Option<String> = None;
+
+        match &self.state {
+            AppState::PickingTone => {
+                ui.label("Rewrite as:");
+                ui.add_space(8.0);
+                for (key, tone) in TONES {
+                    if ui.button(format!("[{}] {}", key, tone)).clicked() {
+                        selected_tone = Some(tone.to_string());
+                    }
                 }
             }
-
-            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
-                self.visible = false;
+            AppState::Loading(tone) => {
+                ui.label(format!("Rewriting as {}...", tone));
             }
+            AppState::Done(text) => {
+                ui.label(text);
+            }
+            AppState::Error(e) => {
+                ui.label(format!("Error: {}", e));
+            }
+        }
+
+        if let Some(tone) = selected_tone {
+            self.state = AppState::Loading(tone);
+        }
+
+        if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.state = AppState::PickingTone;
+            ui.ctx()
+                .send_viewport_cmd(egui::ViewportCommand::Visible(false));
         }
     }
 }
@@ -46,7 +73,7 @@ pub fn show(receiver: mpsc::Receiver<hotkey::HotKeyEvent>) {
         Box::new(move |_cc| {
             Ok(Box::new(App {
                 receiver,
-                visible: true, // Start with the UI visible for testing; change to false for production
+                state: AppState::PickingTone,
             }))
         }),
     )

@@ -1,11 +1,17 @@
 use arboard::Clipboard;
 use enigo::{Enigo, Key, Keyboard, Settings};
+
+// macOS requires a short delay after Cmd+C before the clipboard is populated
+const COPY_SETTLE_MS: u64 = 100;
+// macOS requires a short delay after setting clipboard before Cmd+V and after
+// paste before restoring
+const PASTE_SETTLE_MS: u64 = 100;
 pub fn get_selected_text() -> anyhow::Result<String> {
     simulate_copy_shortcut()?;
 
     let mut clipboard = Clipboard::new()?;
 
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    std::thread::sleep(std::time::Duration::from_millis(COPY_SETTLE_MS));
 
     let text = clipboard.get_text()?;
     validate_text(&text)?;
@@ -31,12 +37,12 @@ pub fn paste_text(text: &str) -> anyhow::Result<()> {
     let mut clipboard = Clipboard::new()?;
     let original = clipboard.get_text().ok();
     clipboard.set_text(text.to_string())?;
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    std::thread::sleep(std::time::Duration::from_millis(PASTE_SETTLE_MS));
     let mut enigo = Enigo::new(&Settings::default())?;
     enigo.key(Key::Meta, enigo::Direction::Press)?;
     enigo.key(Key::Unicode('v'), enigo::Direction::Click)?;
     enigo.key(Key::Meta, enigo::Direction::Release)?;
-    std::thread::sleep(std::time::Duration::from_millis(100));
+    std::thread::sleep(std::time::Duration::from_millis(PASTE_SETTLE_MS));
     if let Some(original_text) = original {
         clipboard.set_text(original_text)?;
     }

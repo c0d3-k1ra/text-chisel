@@ -33,6 +33,9 @@ struct ResponseBody {
 }
 
 const MAX_INPUT_CHARS: usize = 8_000;
+const DEFAULT_MODEL: &str = "claude-haiku-4-5-20251001";
+const ANTHROPIC_API_URL: &str = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
     if text.len() > MAX_INPUT_CHARS {
@@ -43,8 +46,7 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
         );
     }
     let api_key = std::env::var("ANTHROPIC_API_KEY")?;
-    let model = std::env::var("ANTHROPIC_MODEL")
-        .unwrap_or_else(|_| "claude-haiku-4-5-20251001".to_string());
+    let model = std::env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| DEFAULT_MODEL.to_string());
 
     let system = crate::prompts::SYSTEM.to_string();
     let prompt = crate::prompts::user(tone, text);
@@ -60,9 +62,9 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
     };
 
     let response = CLIENT
-        .post("https://api.anthropic.com/v1/messages")
+        .post(ANTHROPIC_API_URL)
         .header("x-api-key", &api_key)
-        .header("anthropic-version", "2023-06-01")
+        .header("anthropic-version", ANTHROPIC_VERSION)
         .header("content-type", "application/json")
         .json(&body)
         .send()

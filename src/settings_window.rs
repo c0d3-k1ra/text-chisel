@@ -90,6 +90,7 @@ fn handle_ipc(msg: &str, original_config: &Config, tx: &mpsc::Sender<SettingsEve
 
     match value["action"].as_str() {
         Some("save") => {
+            log::info!("settings: saving config");
             let new_config = Config {
                 api_key: value["apiKey"].as_str().unwrap_or("").to_string(),
                 model: value["model"]
@@ -105,6 +106,7 @@ fn handle_ipc(msg: &str, original_config: &Config, tx: &mpsc::Sender<SettingsEve
             let _ = tx.send(SettingsEvent::Hide);
         }
         Some("test") => {
+            log::info!("settings: testing connection");
             let api_key = value["apiKey"].as_str().unwrap_or("").to_string();
             let tx = tx.clone();
             std::thread::spawn(move || {
@@ -131,11 +133,15 @@ fn test_connection(api_key: &str) -> SettingsEvent {
     };
 
     match rt.block_on(crate::rewrite::rewrite_with_key("hi", "Concise", api_key)) {
-        Ok(_) => SettingsEvent::TestResult {
-            ok: true,
-            msg: "Connection successful".to_string(),
-        },
+        Ok(_) => {
+            log::info!("settings: connection test passed");
+            SettingsEvent::TestResult {
+                ok: true,
+                msg: "Connection successful".to_string(),
+            }
+        }
         Err(e) => {
+            log::warn!("settings: connection test failed: {}", e);
             let msg = e.to_string();
             let short = if msg.len() > 80 {
                 msg[..80].to_string()

@@ -26,26 +26,38 @@ pub fn path() -> PathBuf {
 
 pub fn load() -> Config {
     let p = path();
-    std::fs::read_to_string(&p)
-        .ok()
-        .and_then(|s| toml::from_str(&s).ok())
-        .unwrap_or_default()
+    match std::fs::read_to_string(&p) {
+        Ok(s) => match toml::from_str(&s) {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                log::warn!(
+                    "config: failed to parse {}: {} — using defaults",
+                    p.display(),
+                    e
+                );
+                Config::default()
+            }
+        },
+        Err(_) => {
+            log::debug!("config: no file at {} — using defaults", p.display());
+            Config::default()
+        }
+    }
 }
 
 pub fn save(config: &Config) {
     let p = path();
     if let Some(parent) = p.parent() {
         if let Err(e) = std::fs::create_dir_all(parent) {
-            eprintln!("config: failed to create directory: {}", e);
+            log::error!("config: failed to create directory: {}", e);
             return;
         }
     }
     match toml::to_string(config) {
-        Ok(s) => {
-            if let Err(e) = std::fs::write(&p, s) {
-                eprintln!("config: failed to write {}: {}", p.display(), e);
-            }
-        }
-        Err(e) => eprintln!("config: failed to serialize: {}", e),
+        Ok(s) => match std::fs::write(&p, &s) {
+            Ok(_) => log::info!("config saved to {}", p.display()),
+            Err(e) => log::error!("config: failed to write {}: {}", p.display(), e),
+        },
+        Err(e) => log::error!("config: failed to serialize: {}", e),
     }
 }

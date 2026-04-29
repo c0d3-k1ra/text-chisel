@@ -61,6 +61,11 @@ fn build_request(text: &str, tone: &str) -> RequestBody {
 }
 
 async fn call_api(api_key: &str, body: &RequestBody) -> anyhow::Result<ResponseBody> {
+    log::debug!(
+        "calling API: model={} max_tokens={}",
+        body.model,
+        body.max_tokens
+    );
     let response = CLIENT
         .post(ANTHROPIC_API_URL)
         .header("x-api-key", api_key)

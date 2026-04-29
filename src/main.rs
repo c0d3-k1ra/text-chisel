@@ -4,7 +4,6 @@ mod prompts;
 mod rewrite;
 
 use hotkey::HotKeyEvent;
-use tao::event::Event;
 use tao::event_loop::{ControlFlow, EventLoop};
 use tray_icon::menu::{Menu, MenuItem, PredefinedMenuItem};
 
@@ -79,7 +78,5 @@ fn main() {
                 std::process::exit(0);
             }
         }
-
-        if let Event::WindowEvent { .. } = _event {}
     });
 }

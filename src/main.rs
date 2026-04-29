@@ -1,5 +1,6 @@
 mod clipboard;
 mod hotkey;
+mod prompts;
 mod rewrite;
 
 use hotkey::HotKeyEvent;

@@ -29,16 +29,8 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
     let model = std::env::var("ANTHROPIC_MODEL")
         .unwrap_or_else(|_| "claude-haiku-4-5-20251001".to_string());
 
-    let system = "You are a precise writing assistant. When given text and a tone, rewrite it in that tone. \
-    Rules: preserve all original meaning and facts exactly; do not add, remove, or invent information; \
-    use no emojis, no em dashes, no filler phrases; \
-    output only the rewritten text with no preamble or explanation."
-        .to_string();
-
-    let prompt = format!(
-        "Rewrite the text between <rewrite> tags in a {} tone. Output only the rewritten text, nothing else.\n\n<rewrite>\n{}\n</rewrite>",
-        tone, text
-    );
+    let system = crate::prompts::SYSTEM.to_string();
+    let prompt = crate::prompts::user(tone, text);
 
     let body = RequestBody {
         model,

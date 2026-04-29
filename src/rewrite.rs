@@ -1,4 +1,12 @@
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+
+static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .expect("failed to build HTTP client")
+});
 
 #[derive(Serialize)]
 struct Message {
@@ -42,10 +50,7 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
         }],
     };
 
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
-        .build()?;
-    let response = client
+    let response = CLIENT
         .post("https://api.anthropic.com/v1/messages")
         .header("x-api-key", &api_key)
         .header("anthropic-version", "2023-06-01")

@@ -2853,6 +2853,7 @@ dependencies = [
  "dotenvy",
  "enigo",
  "global-hotkey",
+ "once_cell",
  "predicates",
  "reqwest",
  "resvg",

@@ -1,14 +1,32 @@
 use global_hotkey::{
     GlobalHotKeyManager,
     GlobalHotKeyEvent,
-    GlobalHotKeyEventReceiver,
     hotkey::{Code, HotKey, Modifiers},
 };
+use std::sync::mpsc;
+use std::thread;
 
-pub fn run() -> (GlobalHotKeyManager, &'static GlobalHotKeyEventReceiver) {
+pub enum HotKeyEvent {
+    RewriteTriggered,
+}
+
+pub fn run() -> mpsc::Receiver<HotKeyEvent> {
+    let (tx, rx) = mpsc::channel();
     let manager = register_hotkey().unwrap();
-    let receiver = GlobalHotKeyEvent::receiver();
-    (manager, receiver)
+    Box::leak(Box::new(manager));
+
+    thread::spawn(move || {
+        let receiver = GlobalHotKeyEvent::receiver();
+        loop {
+            if let Ok(event) = receiver.recv() {
+                if event.state == global_hotkey::HotKeyState::Pressed {
+                    let _ = tx.send(HotKeyEvent::RewriteTriggered);
+                }
+            }
+        }
+    });
+    
+    rx
 }
 
 fn register_hotkey() -> anyhow::Result<GlobalHotKeyManager> {

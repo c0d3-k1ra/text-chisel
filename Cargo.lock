@@ -854,7 +854,6 @@ dependencies = [
  "anyhow",
  "arboard",
  "assert_cmd",
- "core-foundation",
  "enigo",
  "global-hotkey",
  "objc2",

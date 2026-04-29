@@ -1,4 +1,3 @@
-use global_hotkey::GlobalHotKeyEvent;
 use objc2::MainThreadMarker;
 use std::thread;
 
@@ -8,19 +7,16 @@ fn main() {
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
     let ns_app = objc2_app_kit::NSApplication::sharedApplication(mtm);
 
-    let (_hotkey_manager, receiver) = hotkey::run();
-    thread::spawn(|| {
-        loop {
-            if let Ok(event) = receiver.try_recv() {
-                handle_hotkey_event(event);
-            }
+    let receiver = hotkey::run();
+    thread::spawn(move || {
+        while let Ok(event) = receiver.recv() {
+            handle_hotkey_event(event);
         }
     });
     ns_app.run();
 }
 
-fn handle_hotkey_event(event: GlobalHotKeyEvent) {
-    println!("Hotkey event received: {:?}", event);
+fn handle_hotkey_event(_event: hotkey::HotKeyEvent) {
     match clipboard::get_selected_text() {
         Ok(text) => println!("Copied text is {text}"),
         Err(e) => eprintln!("Error occurred: {e}"),

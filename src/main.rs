@@ -6,13 +6,18 @@ mod rewrite;
 use hotkey::HotKeyEvent;
 use tao::event::Event;
 use tao::event_loop::{ControlFlow, EventLoop};
+use tray_icon::menu::{Menu, MenuItem, PredefinedMenuItem};
 
 fn load_icon() -> tray_icon::Icon {
     let svg = include_str!("../assets/icon.svg");
     let opt = resvg::usvg::Options::default();
     let tree = resvg::usvg::Tree::from_str(svg, &opt).unwrap();
     let mut pixmap = resvg::tiny_skia::Pixmap::new(44, 44).unwrap();
-    resvg::render(&tree, resvg::tiny_skia::Transform::default(), &mut pixmap.as_mut());
+    resvg::render(
+        &tree,
+        resvg::tiny_skia::Transform::default(),
+        &mut pixmap.as_mut(),
+    );
     tray_icon::Icon::from_rgba(pixmap.data().to_vec(), 44, 44).unwrap()
 }
 
@@ -26,12 +31,21 @@ fn main() {
     let rx = hotkey::run();
     let rt = tokio::runtime::Runtime::new().unwrap();
 
+    let hotkey_item = MenuItem::new("⌘⌥R  Rewrite selected text", false, None);
+    let quit_item = MenuItem::new("Quit", true, None);
+    let menu = Menu::new();
+    menu.append_items(&[&hotkey_item, &PredefinedMenuItem::separator(), &quit_item])
+        .unwrap();
+
     let _tray = tray_icon::TrayIconBuilder::new()
         .with_icon(load_icon())
         .with_icon_as_template(true)
         .with_tooltip("text-chisel")
+        .with_menu(Box::new(menu))
         .build()
         .unwrap();
+
+    let quit_id = quit_item.id().clone();
 
     let event_loop = EventLoop::new();
     event_loop.run(move |_event, _, control_flow| {
@@ -57,6 +71,12 @@ fn main() {
                     }
                 }
                 Err(e) => eprintln!("clipboard error: {}", e),
+            }
+        }
+
+        if let Ok(event) = tray_icon::menu::MenuEvent::receiver().try_recv() {
+            if event.id == quit_id {
+                std::process::exit(0);
             }
         }
 

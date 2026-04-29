@@ -1,6 +1,11 @@
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
+const MAX_INPUT_CHARS: usize = 8_000;
+const DEFAULT_MODEL: &str = "claude-haiku-4-5-20251001";
+const ANTHROPIC_API_URL: &str = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION: &str = "2023-06-01";
+
 static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
@@ -10,7 +15,7 @@ static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
 
 #[derive(Serialize)]
 struct Message {
-    role: String,
+    role: &'static str,
     content: String,
 }
 
@@ -19,7 +24,7 @@ struct RequestBody {
     model: String,
     max_tokens: u32,
     messages: Vec<Message>,
-    system: String,
+    system: &'static str,
 }
 
 #[derive(Deserialize)]
@@ -32,12 +37,7 @@ struct ResponseBody {
     content: Vec<ResponseContent>,
 }
 
-const MAX_INPUT_CHARS: usize = 8_000;
-const DEFAULT_MODEL: &str = "claude-haiku-4-5-20251001";
-const ANTHROPIC_API_URL: &str = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION: &str = "2023-06-01";
-
-pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
+fn validate(text: &str) -> anyhow::Result<()> {
     if text.len() > MAX_INPUT_CHARS {
         anyhow::bail!(
             "selected text is too long ({} chars, max {})",
@@ -45,39 +45,49 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
             MAX_INPUT_CHARS
         );
     }
-    let api_key = std::env::var("ANTHROPIC_API_KEY")?;
-    let model = std::env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| DEFAULT_MODEL.to_string());
+    Ok(())
+}
 
-    let system = crate::prompts::SYSTEM.to_string();
-    let prompt = crate::prompts::user(tone, text);
-
-    let body = RequestBody {
-        model,
+fn build_request(text: &str, tone: &str) -> RequestBody {
+    RequestBody {
+        model: std::env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| DEFAULT_MODEL.to_string()),
         max_tokens: 1024,
-        system,
+        system: crate::prompts::SYSTEM,
         messages: vec![Message {
-            role: "user".to_string(),
-            content: prompt,
+            role: "user",
+            content: crate::prompts::user(tone, text),
         }],
-    };
+    }
+}
 
-    let response = CLIENT
+async fn call_api(api_key: &str, body: &RequestBody) -> anyhow::Result<ResponseBody> {
+    CLIENT
         .post(ANTHROPIC_API_URL)
-        .header("x-api-key", &api_key)
+        .header("x-api-key", api_key)
         .header("anthropic-version", ANTHROPIC_VERSION)
         .header("content-type", "application/json")
-        .json(&body)
+        .json(body)
         .send()
         .await?
         .error_for_status()?
         .json::<ResponseBody>()
-        .await?;
-    let result = response
+        .await
+        .map_err(Into::into)
+}
+
+fn parse_response(response: ResponseBody) -> anyhow::Result<String> {
+    response
         .content
         .into_iter()
         .next()
-        .ok_or_else(|| anyhow::anyhow!("Empty response from API"))?
-        .text;
+        .ok_or_else(|| anyhow::anyhow!("empty response from API"))
+        .map(|c| c.text)
+}
 
-    Ok(result)
+pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
+    validate(text)?;
+    let api_key = std::env::var("ANTHROPIC_API_KEY")?;
+    let body = build_request(text, tone);
+    let response = call_api(&api_key, &body).await?;
+    parse_response(response)
 }

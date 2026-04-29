@@ -39,10 +39,7 @@ impl eframe::App for App {
 }
 
 pub fn show(receiver: mpsc::Receiver<hotkey::HotKeyEvent>) {
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_visible(false),
-        ..Default::default()
-    };
+    let options = eframe::NativeOptions::default();
     eframe::run_native(
         "text-chisel",
         options,

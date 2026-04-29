@@ -9,7 +9,7 @@ mod tray;
 use std::sync::{Arc, Mutex};
 
 use hotkey::HotKeyEvent;
-use tao::event::{Event, WindowEvent};
+use tao::event::{Event, StartCause, WindowEvent};
 use tao::event_loop::{ControlFlow, EventLoop};
 
 fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
@@ -86,6 +86,17 @@ fn main() {
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
+
+        #[cfg(target_os = "macos")]
+        if let Event::NewEvents(StartCause::Init) = event {
+            #[allow(unexpected_cfgs)]
+            unsafe {
+                use objc::{class, msg_send, sel, sel_impl};
+                let app: *mut objc::runtime::Object =
+                    msg_send![class!(NSApplication), sharedApplication];
+                let _: () = msg_send![app, setActivationPolicy: 1_isize];
+            }
+        }
 
         if let Event::WindowEvent {
             event: WindowEvent::CloseRequested,

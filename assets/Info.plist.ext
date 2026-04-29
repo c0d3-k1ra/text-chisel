@@ -1,0 +1,4 @@
+<key>LSUIElement</key>
+<true/>
+<key>NSAccessibilityUsageDescription</key>
+<string>Text Chisel needs Accessibility access to copy selected text and paste rewritten text.</string>

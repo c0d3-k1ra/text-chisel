@@ -23,6 +23,17 @@ dirs = "5"
 log = "0.4"
 env_logger = "0.11"
 
+[package.metadata.bundle]
+name = "Text Chisel"
+identifier = "com.textchisel.app"
+icon = ["assets/icon.icns"]
+short_description = "Rewrite selected text using Claude AI"
+osx_minimum_system_version = "12.0"
+osx_info_plist_exts = ["assets/Info.plist.ext"]
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc = "0.2"
+
 [dev-dependencies]
 assert_cmd = "2.2.1"
 predicates = "3.1.4"

@@ -1,4 +1,6 @@
-# text-chisel
+# Text Chisel
+
+[![Rust](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml/badge.svg)](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml)
 
 A macOS menu bar app that rewrites selected text using Claude AI.
 

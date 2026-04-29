@@ -1,6 +1,6 @@
 use global_hotkey::GlobalHotKeyEvent;
-use std::thread;
 use objc2::MainThreadMarker;
+use std::thread;
 
 mod clipboard;
 mod hotkey;
@@ -8,12 +8,12 @@ fn main() {
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
     let ns_app = objc2_app_kit::NSApplication::sharedApplication(mtm);
 
-    let _manager =hotkey::register_hotkey().unwrap();
+    let _manager = hotkey::register_hotkey().unwrap();
     thread::spawn(|| {
-        let receiver =GlobalHotKeyEvent::receiver();
+        let receiver = GlobalHotKeyEvent::receiver();
         loop {
             if let Ok(event) = receiver.try_recv() {
-            handle_hotkey_event(event);
+                handle_hotkey_event(event);
             }
         }
     });

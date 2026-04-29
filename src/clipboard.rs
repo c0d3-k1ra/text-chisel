@@ -33,8 +33,8 @@ mod tests {
     #[test]
     #[ignore = "This test requires user interaction to select text before running. Run it manually to verify functionality."]
     fn test_get_selected_text_returns_something() {
-          let text = get_selected_text().unwrap();
-          assert!(!text.is_empty());
+        let text = get_selected_text().unwrap();
+        assert!(!text.is_empty());
     }
 
     #[test]
@@ -47,4 +47,3 @@ mod tests {
         assert!(validate_text("Hello").is_ok());
     }
 }
-

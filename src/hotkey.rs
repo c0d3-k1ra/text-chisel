@@ -1,4 +1,7 @@
-use global_hotkey::{GlobalHotKeyManager, hotkey::{HotKey, Modifiers, Code}};
+use global_hotkey::{
+    GlobalHotKeyManager,
+    hotkey::{Code, HotKey, Modifiers},
+};
 
 pub fn register_hotkey() -> anyhow::Result<GlobalHotKeyManager> {
     let manager = GlobalHotKeyManager::new()?;
@@ -10,7 +13,6 @@ pub fn register_hotkey() -> anyhow::Result<GlobalHotKeyManager> {
 fn create_hotkey() -> HotKey {
     HotKey::new(Some(Modifiers::SUPER | Modifiers::ALT), Code::KeyR)
 }
-
 
 #[cfg(test)]
 mod tests {

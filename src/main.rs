@@ -48,9 +48,7 @@ fn main() {
 
     let event_loop = EventLoop::new();
     event_loop.run(move |_event, _, control_flow| {
-        *control_flow = ControlFlow::WaitUntil(
-            std::time::Instant::now() + std::time::Duration::from_millis(50),
-        );
+        *control_flow = ControlFlow::Wait;
 
         if let Ok(HotKeyEvent::RewriteTriggered) = rx.try_recv() {
             eprintln!("hotkey fired");

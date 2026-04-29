@@ -5,6 +5,7 @@ const DEFAULT_TONE: &str = "Professional";
 
 pub struct Tray {
     pub quit_id: tray_icon::menu::MenuId,
+    pub settings_id: tray_icon::menu::MenuId,
     pub tone_ids: Vec<(tray_icon::menu::MenuId, &'static str)>,
     tone_items: Vec<CheckMenuItem>,
     _icon: tray_icon::TrayIcon,
@@ -21,6 +22,8 @@ impl Tray {
 pub fn build() -> Tray {
     let icon = load_icon();
     let hotkey_item = MenuItem::new("⌘⌥R  Rewrite selected text", false, None);
+    let settings_item = MenuItem::new("Settings", true, None);
+    let settings_id = settings_item.id().clone();
     let quit_item = MenuItem::new("Quit", true, None);
     let quit_id = quit_item.id().clone();
 
@@ -45,6 +48,8 @@ pub fn build() -> Tray {
     }
     menu.append(&PredefinedMenuItem::separator())
         .expect("failed to append separator");
+    menu.append(&settings_item)
+        .expect("failed to append settings item");
     menu.append(&quit_item).expect("failed to append quit item");
 
     let _icon = tray_icon::TrayIconBuilder::new()
@@ -57,6 +62,7 @@ pub fn build() -> Tray {
 
     Tray {
         quit_id,
+        settings_id,
         tone_ids,
         tone_items,
         _icon,

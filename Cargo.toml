@@ -17,6 +17,9 @@ tao = { version = "0.35.0" , default-features = false, features = ["rwh_06"] }
 tokio = { version = "1.44", features = ["rt-multi-thread", "macros"] }
 tray-icon = "0.23.0"
 resvg = "0.44"
+wry = "0.47"
+toml = "0.8"
+dirs = "5"
 
 [dev-dependencies]
 assert_cmd = "2.2.1"

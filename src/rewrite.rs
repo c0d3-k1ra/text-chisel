@@ -95,3 +95,10 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
     let response = call_api(&api_key, &body).await?;
     parse_response(response)
 }
+
+pub async fn rewrite_with_key(text: &str, tone: &str, api_key: &str) -> anyhow::Result<String> {
+    validate(text)?;
+    let body = build_request(text, tone);
+    let response = call_api(api_key, &body).await?;
+    parse_response(response)
+}

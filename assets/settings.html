@@ -51,6 +51,8 @@
   .cancel:hover { background: #333; }
   .save { background: #fff; color: #000; font-weight: 500; }
   .save:hover { background: #e8e8e8; }
+  .test { background: #2a2a2a; color: #aaa; border: 1px solid #3a3a3a; }
+  .test:hover { background: #333; }
   .hint { font-size: 11px; color: #555; margin-top: 4px; }
 </style>
 </head>
@@ -71,9 +73,12 @@
 </div>
 
 <div class="actions">
+  <button class="test" onclick="test()">Test connection</button>
+  <div style="flex:1"></div>
   <button class="cancel" onclick="cancel()">Cancel</button>
   <button class="save" onclick="save()">Save</button>
 </div>
+<div id="status" style="margin-top:12px;font-size:12px;min-height:16px;"></div>
 
 <script>
   function init(apiKey, model) {
@@ -93,6 +98,23 @@
       apiKey,
       model: document.getElementById('model').value,
     }));
+  }
+
+  function test() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    if (!apiKey) {
+      document.getElementById('apiKey').style.borderColor = '#e05';
+      return;
+    }
+    document.getElementById('status').style.color = '#888';
+    document.getElementById('status').textContent = 'Testing...';
+    window.ipc.postMessage(JSON.stringify({ action: 'test', apiKey }));
+  }
+
+  function showTestResult(ok, msg) {
+    const el = document.getElementById('status');
+    el.style.color = ok ? '#4c4' : '#e55';
+    el.textContent = msg;
   }
 
   function cancel() {

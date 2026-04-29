@@ -9,10 +9,11 @@ use crate::config::{self, Config};
 
 pub enum SettingsEvent {
     Hide,
+    TestResult { ok: bool, msg: String },
 }
 
 pub struct SettingsWindow {
-    _webview: wry::WebView,
+    webview: wry::WebView,
     window: Window,
     pub rx: mpsc::Receiver<SettingsEvent>,
 }
@@ -28,8 +29,17 @@ impl SettingsWindow {
     }
 
     pub fn poll(&self) {
-        if let Ok(SettingsEvent::Hide) = self.rx.try_recv() {
-            self.hide();
+        while let Ok(event) = self.rx.try_recv() {
+            match event {
+                SettingsEvent::Hide => self.hide(),
+                SettingsEvent::TestResult { ok, msg } => {
+                    let ok_js = if ok { "true" } else { "false" };
+                    let msg_json = serde_json::to_string(&msg).unwrap_or_default();
+                    let _ = self
+                        .webview
+                        .evaluate_script(&format!("showTestResult({}, {})", ok_js, msg_json));
+                }
+            }
         }
     }
 }
@@ -37,7 +47,7 @@ impl SettingsWindow {
 pub fn build(event_loop: &EventLoop<()>, config: &Config) -> SettingsWindow {
     let window = WindowBuilder::new()
         .with_title("text-chisel — Settings")
-        .with_inner_size(LogicalSize::new(400, 300))
+        .with_inner_size(LogicalSize::new(400, 320))
         .with_resizable(false)
         .with_visible(false)
         .build(event_loop)
@@ -47,7 +57,7 @@ pub fn build(event_loop: &EventLoop<()>, config: &Config) -> SettingsWindow {
     let config_clone = config.clone();
     let (tx, rx) = mpsc::channel();
 
-    let _webview = WebViewBuilder::new()
+    let webview = WebViewBuilder::new()
         .with_html(html)
         .with_ipc_handler(move |msg| {
             handle_ipc(msg.body(), &config_clone, &tx);
@@ -56,7 +66,7 @@ pub fn build(event_loop: &EventLoop<()>, config: &Config) -> SettingsWindow {
         .expect("failed to create settings webview");
 
     SettingsWindow {
-        _webview,
+        webview,
         window,
         rx,
     }
@@ -94,9 +104,48 @@ fn handle_ipc(msg: &str, original_config: &Config, tx: &mpsc::Sender<SettingsEve
             }
             let _ = tx.send(SettingsEvent::Hide);
         }
+        Some("test") => {
+            let api_key = value["apiKey"].as_str().unwrap_or("").to_string();
+            let tx = tx.clone();
+            std::thread::spawn(move || {
+                let result = test_connection(&api_key);
+                let _ = tx.send(result);
+            });
+        }
         Some("cancel") => {
             let _ = tx.send(SettingsEvent::Hide);
         }
         _ => {}
+    }
+}
+
+fn test_connection(api_key: &str) -> SettingsEvent {
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(r) => r,
+        Err(e) => {
+            return SettingsEvent::TestResult {
+                ok: false,
+                msg: e.to_string(),
+            };
+        }
+    };
+
+    match rt.block_on(crate::rewrite::rewrite_with_key("hi", "Concise", api_key)) {
+        Ok(_) => SettingsEvent::TestResult {
+            ok: true,
+            msg: "Connection successful".to_string(),
+        },
+        Err(e) => {
+            let msg = e.to_string();
+            let short = if msg.len() > 80 {
+                msg[..80].to_string()
+            } else {
+                msg
+            };
+            SettingsEvent::TestResult {
+                ok: false,
+                msg: short,
+            }
+        }
     }
 }

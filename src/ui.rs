@@ -31,11 +31,13 @@ impl eframe::App for App {
                 Ok(text) => {
                     self.original_text = text;
                     self.state = AppState::PickingTone;
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                    ui.ctx()
+                        .send_viewport_cmd(egui::ViewportCommand::Visible(true));
                 }
                 Err(e) => {
                     self.state = AppState::Error(e.to_string());
-                    ui.ctx().send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                    ui.ctx()
+                        .send_viewport_cmd(egui::ViewportCommand::Visible(true));
                 }
             }
         }

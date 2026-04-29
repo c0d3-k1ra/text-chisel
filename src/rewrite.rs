@@ -61,18 +61,22 @@ fn build_request(text: &str, tone: &str) -> RequestBody {
 }
 
 async fn call_api(api_key: &str, body: &RequestBody) -> anyhow::Result<ResponseBody> {
-    CLIENT
+    let response = CLIENT
         .post(ANTHROPIC_API_URL)
         .header("x-api-key", api_key)
         .header("anthropic-version", ANTHROPIC_VERSION)
         .header("content-type", "application/json")
         .json(body)
         .send()
-        .await?
-        .error_for_status()?
-        .json::<ResponseBody>()
-        .await
-        .map_err(Into::into)
+        .await?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        anyhow::bail!("API error {}: {}", status, body);
+    }
+
+    response.json::<ResponseBody>().await.map_err(Into::into)
 }
 
 fn parse_response(response: ResponseBody) -> anyhow::Result<String> {

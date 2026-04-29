@@ -17,11 +17,9 @@ pub fn run() -> mpsc::Receiver<HotKeyEvent> {
 
     thread::spawn(move || {
         let receiver = GlobalHotKeyEvent::receiver();
-        loop {
-            if let Ok(event) = receiver.recv() {
-                if event.state == global_hotkey::HotKeyState::Pressed {
-                    let _ = tx.send(HotKeyEvent::RewriteTriggered);
-                }
+        for event in receiver.iter() {
+            if event.state == global_hotkey::HotKeyState::Pressed {
+                let _ = tx.send(HotKeyEvent::RewriteTriggered);
             }
         }
     });

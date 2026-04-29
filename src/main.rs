@@ -8,9 +8,8 @@ fn main() {
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
     let ns_app = objc2_app_kit::NSApplication::sharedApplication(mtm);
 
-    let _manager = hotkey::register_hotkey().unwrap();
+    let (_hotkey_manager, receiver) = hotkey::run();
     thread::spawn(|| {
-        let receiver = GlobalHotKeyEvent::receiver();
         loop {
             if let Ok(event) = receiver.try_recv() {
                 handle_hotkey_event(event);

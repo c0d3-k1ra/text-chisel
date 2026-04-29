@@ -1,9 +1,17 @@
 use global_hotkey::{
     GlobalHotKeyManager,
+    GlobalHotKeyEvent,
+    GlobalHotKeyEventReceiver,
     hotkey::{Code, HotKey, Modifiers},
 };
 
-pub fn register_hotkey() -> anyhow::Result<GlobalHotKeyManager> {
+pub fn run() -> (GlobalHotKeyManager, &'static GlobalHotKeyEventReceiver) {
+    let manager = register_hotkey().unwrap();
+    let receiver = GlobalHotKeyEvent::receiver();
+    (manager, receiver)
+}
+
+fn register_hotkey() -> anyhow::Result<GlobalHotKeyManager> {
     let manager = GlobalHotKeyManager::new()?;
     let hotkey = create_hotkey();
     manager.register(hotkey)?;

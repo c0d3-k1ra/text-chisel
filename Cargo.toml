@@ -6,7 +6,11 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 arboard = "3.6.1"
+core-foundation = "0.10.1"
 enigo = "0.6.1"
+global-hotkey = "0.7.0"
+objc2 = "0.6.4"
+objc2-app-kit = { version = "0.3.2", features = ["NSApplication"] }
 
 [dev-dependencies]
 assert_cmd = "2.2.1"

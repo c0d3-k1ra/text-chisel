@@ -35,7 +35,10 @@ pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
     output only the rewritten text with no preamble or explanation."
         .to_string();
 
-    let prompt = format!("Tone: {}\n\nText:\n{}", tone, text);
+    let prompt = format!(
+        "Rewrite the text between <rewrite> tags in a {} tone. Output only the rewritten text, nothing else.\n\n<rewrite>\n{}\n</rewrite>",
+        tone, text
+    );
 
     let body = RequestBody {
         model,

@@ -1,19 +1,16 @@
-use objc2::MainThreadMarker;
 use std::thread;
 
 mod clipboard;
 mod hotkey;
+mod ui;
 fn main() {
-    let mtm = unsafe { MainThreadMarker::new_unchecked() };
-    let ns_app = objc2_app_kit::NSApplication::sharedApplication(mtm);
-
     let receiver = hotkey::run();
     thread::spawn(move || {
         while let Ok(event) = receiver.recv() {
             handle_hotkey_event(event);
         }
     });
-    ns_app.run();
+    ui::show();
 }
 
 fn handle_hotkey_event(_event: hotkey::HotKeyEvent) {

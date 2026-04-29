@@ -1,6 +1,5 @@
 use global_hotkey::{
-    GlobalHotKeyManager,
-    GlobalHotKeyEvent,
+    GlobalHotKeyEvent, GlobalHotKeyManager,
     hotkey::{Code, HotKey, Modifiers},
 };
 use std::sync::mpsc;
@@ -25,7 +24,7 @@ pub fn run() -> mpsc::Receiver<HotKeyEvent> {
             }
         }
     });
-    
+
     rx
 }
 

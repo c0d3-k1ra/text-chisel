@@ -10,14 +10,14 @@ use tray_icon::menu::{Menu, MenuItem, PredefinedMenuItem};
 fn load_icon() -> tray_icon::Icon {
     let svg = include_str!("../assets/icon.svg");
     let opt = resvg::usvg::Options::default();
-    let tree = resvg::usvg::Tree::from_str(svg, &opt).unwrap();
-    let mut pixmap = resvg::tiny_skia::Pixmap::new(44, 44).unwrap();
+    let tree = resvg::usvg::Tree::from_str(svg, &opt).expect("failed to parse icon SVG");
+    let mut pixmap = resvg::tiny_skia::Pixmap::new(44, 44).expect("failed to create pixmap");
     resvg::render(
         &tree,
         resvg::tiny_skia::Transform::default(),
         &mut pixmap.as_mut(),
     );
-    tray_icon::Icon::from_rgba(pixmap.data().to_vec(), 44, 44).unwrap()
+    tray_icon::Icon::from_rgba(pixmap.data().to_vec(), 44, 44).expect("failed to create tray icon")
 }
 
 fn main() {
@@ -28,13 +28,13 @@ fn main() {
     }
 
     let rx = hotkey::run();
-    let rt = tokio::runtime::Runtime::new().unwrap();
+    let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
 
     let hotkey_item = MenuItem::new("⌘⌥R  Rewrite selected text", false, None);
     let quit_item = MenuItem::new("Quit", true, None);
     let menu = Menu::new();
     menu.append_items(&[&hotkey_item, &PredefinedMenuItem::separator(), &quit_item])
-        .unwrap();
+        .expect("failed to build tray menu");
 
     let _tray = tray_icon::TrayIconBuilder::new()
         .with_icon(load_icon())
@@ -42,7 +42,7 @@ fn main() {
         .with_tooltip("text-chisel")
         .with_menu(Box::new(menu))
         .build()
-        .unwrap();
+        .expect("failed to create tray icon");
 
     let quit_id = quit_item.id().clone();
 

@@ -32,7 +32,16 @@ struct ResponseBody {
     content: Vec<ResponseContent>,
 }
 
+const MAX_INPUT_CHARS: usize = 8_000;
+
 pub async fn rewrite(text: &str, tone: &str) -> anyhow::Result<String> {
+    if text.len() > MAX_INPUT_CHARS {
+        anyhow::bail!(
+            "selected text is too long ({} chars, max {})",
+            text.len(),
+            MAX_INPUT_CHARS
+        );
+    }
     let api_key = std::env::var("ANTHROPIC_API_KEY")?;
     let model = std::env::var("ANTHROPIC_MODEL")
         .unwrap_or_else(|_| "claude-haiku-4-5-20251001".to_string());

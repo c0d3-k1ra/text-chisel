@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "Running pre-commit checks..."
+
+cargo fmt --check
+if [ $? -ne 0 ]; then
+  echo "fmt check failed. Run 'cargo fmt' to fix."
+  exit 1
+fi
+
+cargo clippy -- -D warnings -A unexpected_cfgs
+if [ $? -ne 0 ]; then
+  echo "Clippy failed."
+  exit 1
+fi
+
+echo "All checks passed."

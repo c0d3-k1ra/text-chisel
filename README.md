@@ -43,8 +43,11 @@ Pick a tone from the menu bar icon at any time:
 ```bash
 git clone https://github.com/c0d3-k1ra/text-chisel
 cd text-chisel
+git config core.hooksPath .githooks
 cargo run
 ```
+
+`git config core.hooksPath .githooks` installs the project's git hooks — `fmt` + `clippy` on commit, tests on push. Run it once after cloning.
 
 On first launch, the Settings window opens automatically. Paste your Anthropic API key and click **Save**.
 

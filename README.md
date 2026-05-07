@@ -62,6 +62,16 @@ cargo bundle --release
 
 The app is output to `target/release/bundle/osx/Text Chisel.app`. Drag it to `/Applications` to install.
 
+### Gatekeeper warning
+
+The app is not signed with an Apple Developer certificate, so macOS will block it on first launch with a "cannot be opened because the developer cannot be verified" message. To bypass it, run this once after installing:
+
+```bash
+xattr -cr "/Applications/Text Chisel.app"
+```
+
+Then launch normally. You only need to do this once.
+
 ---
 
 ## Settings

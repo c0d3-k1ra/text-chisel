@@ -66,10 +66,32 @@ fn simulate_paste() -> anyhow::Result<()> {
 mod tests {
     use super::*;
     #[test]
-    #[ignore = "This test requires user interaction to select text before running. Run it manually to verify functionality."]
+    #[ignore = "Requires selected text. Select some text in any app, then run this test to verify Cmd+C copy works."]
     fn test_get_selected_text_returns_something() {
         let text = get_selected_text().unwrap();
         assert!(!text.is_empty());
+        println!("Copied: {:?}", text);
+    }
+
+    #[test]
+    #[ignore = "Requires Accessibility permission. Place cursor in a text editor, then run to verify Cmd+V paste works."]
+    fn test_paste_text_into_focused_app() {
+        paste_text("hello from text-chisel test").unwrap();
+        // Verify by checking the text appeared in the editor you focused.
+    }
+
+    #[test]
+    #[ignore = "Requires selected text and Accessibility permission. Select text, run, verify it is replaced with the same text pasted back."]
+    fn test_paste_restores_original_clipboard() {
+        let original = "original clipboard contents";
+        arboard::Clipboard::new()
+            .unwrap()
+            .set_text(original)
+            .unwrap();
+        paste_text("replacement text").unwrap();
+        // After paste, clipboard should be restored to original.
+        let restored = arboard::Clipboard::new().unwrap().get_text().unwrap();
+        assert_eq!(restored, original, "clipboard was not restored after paste");
     }
 
     #[test]

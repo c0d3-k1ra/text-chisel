@@ -161,3 +161,68 @@ fn test_connection(api_key: &str) -> SettingsEvent {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+
+    fn default_config() -> Config {
+        Config {
+            api_key: "sk-ant-test".to_string(),
+            model: "claude-haiku-4-5-20251001".to_string(),
+        }
+    }
+
+    // --- build_html ---
+
+    #[test]
+    fn build_html_injects_api_key_and_model() {
+        let html = build_html(&default_config());
+        assert!(html.contains("sk-ant-test"));
+        assert!(html.contains("claude-haiku-4-5-20251001"));
+    }
+
+    #[test]
+    fn build_html_contains_init_call() {
+        let html = build_html(&default_config());
+        assert!(html.contains("DOMContentLoaded"));
+        assert!(html.contains("init("));
+    }
+
+    #[test]
+    fn build_html_empty_api_key_does_not_panic() {
+        let cfg = Config {
+            api_key: String::new(),
+            model: String::new(),
+        };
+        let html = build_html(&cfg);
+        assert!(!html.is_empty());
+    }
+
+    // --- handle_ipc ---
+
+    #[test]
+    fn handle_ipc_cancel_sends_hide() {
+        let cfg = default_config();
+        let (tx, rx) = std::sync::mpsc::channel();
+        handle_ipc(r#"{"action":"cancel"}"#, &cfg, &tx);
+        assert!(matches!(rx.try_recv().unwrap(), SettingsEvent::Hide));
+    }
+
+    #[test]
+    fn handle_ipc_invalid_json_no_panic_no_event() {
+        let cfg = default_config();
+        let (tx, rx) = std::sync::mpsc::channel();
+        handle_ipc("not json at all", &cfg, &tx);
+        assert!(rx.try_recv().is_err());
+    }
+
+    #[test]
+    fn handle_ipc_unknown_action_no_event() {
+        let cfg = default_config();
+        let (tx, rx) = std::sync::mpsc::channel();
+        handle_ipc(r#"{"action":"unknown"}"#, &cfg, &tx);
+        assert!(rx.try_recv().is_err());
+    }
+}

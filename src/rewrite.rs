@@ -165,4 +165,37 @@ mod tests {
         let resp = ResponseBody { content: vec![] };
         assert!(parse_response(resp).is_err());
     }
+
+    // --- live API ---
+
+    #[test]
+    #[ignore = "Requires ANTHROPIC_API_KEY env var set. Makes a real API call."]
+    fn test_rewrite_with_real_api() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(rewrite(
+            "Please fix my grammer its not good.",
+            "Professional",
+        ));
+        assert!(result.is_ok(), "API call failed: {:?}", result.err());
+        let text = result.unwrap();
+        assert!(!text.is_empty());
+        println!("Rewritten: {}", text);
+    }
+
+    #[test]
+    #[ignore = "Requires ANTHROPIC_API_KEY env var set. Verifies all five tones produce non-empty output."]
+    fn test_all_tones_with_real_api() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let input = "hey can you send me the report before friday thanks";
+        for tone in &["Professional", "Polite", "Assertive", "Concise", "Gen Z"] {
+            let result = rt.block_on(rewrite(input, tone));
+            assert!(result.is_ok(), "tone {} failed: {:?}", tone, result.err());
+            assert!(!result.unwrap().is_empty(), "tone {} returned empty", tone);
+            println!(
+                "{}:\n{}\n",
+                tone,
+                rt.block_on(rewrite(input, tone)).unwrap()
+            );
+        }
+    }
 }

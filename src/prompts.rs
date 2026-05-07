@@ -167,3 +167,97 @@ pub fn system(tone: &str) -> String {
 pub fn user(text: &str) -> String {
     text.to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- system() ---
+
+    #[test]
+    fn system_contains_tone_name() {
+        for tone in &["Professional", "Polite", "Assertive", "Concise", "Gen Z"] {
+            let s = system(tone);
+            assert!(
+                s.contains(tone),
+                "system prompt missing tone name for {}",
+                tone
+            );
+        }
+    }
+
+    #[test]
+    fn system_unknown_tone_falls_back_to_professional() {
+        let s = system("Unknown");
+        assert!(s.contains("business-appropriate"));
+    }
+
+    #[test]
+    fn system_professional_contains_instructions_and_examples() {
+        let s = system("Professional");
+        assert!(s.contains("business-appropriate"));
+        assert!(s.contains("client meeting")); // from examples
+    }
+
+    #[test]
+    fn system_polite_contains_instructions_and_examples() {
+        let s = system("Polite");
+        assert!(s.contains("could you"));
+        assert!(s.contains("when you get a chance")); // from examples
+    }
+
+    #[test]
+    fn system_assertive_contains_instructions_and_examples() {
+        let s = system("Assertive");
+        assert!(s.contains("hedges"));
+        assert!(s.contains("We should roll back")); // from examples
+    }
+
+    #[test]
+    fn system_concise_contains_instructions_and_examples() {
+        let s = system("Concise");
+        assert!(s.contains("Cut every word"));
+        assert!(s.contains("Did you get a chance")); // from examples
+    }
+
+    #[test]
+    fn system_gen_z_contains_instructions_and_examples() {
+        let s = system("Gen Z");
+        assert!(s.contains("ngl"));
+        assert!(s.contains("still waiting ngl")); // from examples
+    }
+
+    #[test]
+    fn system_no_unfilled_placeholders() {
+        for tone in &["Professional", "Polite", "Assertive", "Concise", "Gen Z"] {
+            let s = system(tone);
+            assert!(
+                !s.contains("{TONE_NAME}"),
+                "unfilled {{TONE_NAME}} in {}",
+                tone
+            );
+            assert!(
+                !s.contains("{TONE_INSTRUCTIONS}"),
+                "unfilled {{TONE_INSTRUCTIONS}} in {}",
+                tone
+            );
+            assert!(
+                !s.contains("{TONE_EXAMPLES}"),
+                "unfilled {{TONE_EXAMPLES}} in {}",
+                tone
+            );
+        }
+    }
+
+    // --- user() ---
+
+    #[test]
+    fn user_returns_text_unchanged() {
+        assert_eq!(user("hello world"), "hello world");
+    }
+
+    #[test]
+    fn user_empty_string() {
+        assert_eq!(user(""), "");
+    }
+}

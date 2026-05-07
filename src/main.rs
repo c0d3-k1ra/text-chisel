@@ -18,7 +18,7 @@ fn notify_error(message: &str) {
         .replace('"', "'")
         .replace(['\n', '\r'], " ");
     let safe = if safe.len() > 150 { &safe[..150] } else { &safe };
-    let script = format!("display notification \"{safe}\" with title \"Text Chisel\"");
+    let script = format!("display notification \"{safe}\" with title \"Text Chisel\" sound name \"Basso\"");
     let _ = std::process::Command::new("osascript")
         .args(["-e", &script])
         .spawn();
@@ -34,7 +34,12 @@ fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
         }
         Err(e) => {
             log::error!("clipboard error: {}", e);
-            notify_error(&format!("Could not read selected text: {e}"));
+            let msg = if e.to_string().contains("empty") || e.to_string().contains("whitespace") {
+                "Select some text first, then press \u{2318}\u{2325}R."
+            } else {
+                "Text Chisel needs Accessibility access. Enable it in System Settings > Privacy > Accessibility."
+            };
+            notify_error(msg);
             return;
         }
     };
@@ -47,7 +52,23 @@ fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
         }
         Err(e) => {
             log::error!("API error: {}", e);
-            notify_error(&format!("Rewrite failed: {e}"));
+            let s = e.to_string();
+            let msg = if s.contains("environment variable not found") {
+                "Add your Anthropic API key in Settings to get started.".to_string()
+            } else if s.contains("401") {
+                "API key not accepted. Open Settings to update it.".to_string()
+            } else if s.contains("too long") {
+                "Selection is too long. Try again with under 8,000 characters.".to_string()
+            } else if s.contains("429") {
+                "Too many requests. Wait a moment and try again.".to_string()
+            } else if s.contains("529") || s.contains("overloaded") {
+                "Claude is busy right now. Give it a moment and try again.".to_string()
+            } else if s.contains("timed out") || s.contains("timeout") {
+                "Claude took too long to respond. Try again in a moment.".to_string()
+            } else {
+                "Something went wrong. Try again or check the logs.".to_string()
+            };
+            notify_error(&msg);
             return;
         }
     };
@@ -56,7 +77,7 @@ fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
         Ok(_) => log::info!("pasted successfully"),
         Err(e) => {
             log::error!("paste error: {}", e);
-            notify_error(&format!("Paste failed: {e}"));
+            notify_error("Text was rewritten but could not be pasted. Check Accessibility access in System Settings.");
         }
     }
 }

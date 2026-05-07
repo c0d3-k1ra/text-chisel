@@ -185,7 +185,9 @@ fn main() {
                     Ok(_) => tray.set_launch_at_login(enabling),
                     Err(e) => {
                         log::error!("launch at login toggle failed: {}", e);
-                        notify_error("Could not update launch at login setting. Check logs for details.");
+                        notify_error(
+                            "Could not update launch at login setting. Check logs for details.",
+                        );
                     }
                 }
             }

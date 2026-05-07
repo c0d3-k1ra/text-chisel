@@ -4,8 +4,8 @@ use std::path::PathBuf;
 const LABEL: &str = "com.textchisel.app";
 
 fn plist_path() -> anyhow::Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
+    let home =
+        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
     Ok(home
         .join("Library/LaunchAgents")
         .join(format!("{}.plist", LABEL)))
@@ -24,13 +24,11 @@ pub(crate) fn is_enabled() -> bool {
 }
 
 pub(crate) fn enable() -> anyhow::Result<()> {
-    let exe = std::env::current_exe()
-        .context("failed to get current executable path")?;
+    let exe = std::env::current_exe().context("failed to get current executable path")?;
     let p = plist_path()?;
 
     if let Some(parent) = p.parent() {
-        std::fs::create_dir_all(parent)
-            .context("failed to create LaunchAgents directory")?;
+        std::fs::create_dir_all(parent).context("failed to create LaunchAgents directory")?;
     }
 
     let plist = format!(
@@ -55,8 +53,7 @@ pub(crate) fn enable() -> anyhow::Result<()> {
         exe = xml_escape(&exe.to_string_lossy())
     );
 
-    std::fs::write(&p, &plist)
-        .context("failed to write LaunchAgent plist")?;
+    std::fs::write(&p, &plist).context("failed to write LaunchAgent plist")?;
 
     // Intentionally not calling `launchctl bootstrap` here — doing so with
     // RunAtLoad=true would spawn a second instance immediately. The plist
@@ -70,8 +67,7 @@ pub(crate) fn disable() -> anyhow::Result<()> {
     let p = plist_path()?;
 
     if p.exists() {
-        std::fs::remove_file(&p)
-            .context("failed to remove LaunchAgent plist")?;
+        std::fs::remove_file(&p).context("failed to remove LaunchAgent plist")?;
     }
 
     log::info!("launch at login disabled");

@@ -6,6 +6,7 @@ const COPY_SETTLE_MS: u64 = 100;
 // macOS requires a short delay after setting clipboard before Cmd+V and after
 // paste before restoring
 const PASTE_SETTLE_MS: u64 = 100;
+
 pub fn get_selected_text() -> anyhow::Result<String> {
     simulate_copy_shortcut()?;
 
@@ -37,15 +38,27 @@ pub fn paste_text(text: &str) -> anyhow::Result<()> {
     let mut clipboard = Clipboard::new()?;
     let original = clipboard.get_text().ok();
     clipboard.set_text(text.to_string())?;
+
+    // Run the paste and always restore the original clipboard afterwards,
+    // even if the paste simulation fails mid-way.
+    let result = simulate_paste();
+
+    std::thread::sleep(std::time::Duration::from_millis(PASTE_SETTLE_MS));
+    if let Some(original_text) = original {
+        if let Err(e) = clipboard.set_text(original_text) {
+            log::warn!("failed to restore clipboard: {}", e);
+        }
+    }
+
+    result
+}
+
+fn simulate_paste() -> anyhow::Result<()> {
     std::thread::sleep(std::time::Duration::from_millis(PASTE_SETTLE_MS));
     let mut enigo = Enigo::new(&Settings::default())?;
     enigo.key(Key::Meta, enigo::Direction::Press)?;
     enigo.key(Key::Unicode('v'), enigo::Direction::Click)?;
     enigo.key(Key::Meta, enigo::Direction::Release)?;
-    std::thread::sleep(std::time::Duration::from_millis(PASTE_SETTLE_MS));
-    if let Some(original_text) = original {
-        clipboard.set_text(original_text)?;
-    }
     Ok(())
 }
 

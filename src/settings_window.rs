@@ -99,9 +99,15 @@ fn handle_ipc(msg: &str, original_config: &Config, tx: &mpsc::Sender<SettingsEve
                     .to_string(),
             };
             config::save(&new_config);
+            // SAFETY: called from the wry IPC callback, which runs on the main
+            // thread before any concurrent rewrite is in flight.
             unsafe {
-                std::env::set_var("ANTHROPIC_API_KEY", &new_config.api_key);
-                std::env::set_var("ANTHROPIC_MODEL", &new_config.model);
+                if !new_config.api_key.is_empty() {
+                    std::env::set_var("ANTHROPIC_API_KEY", &new_config.api_key);
+                }
+                if !new_config.model.is_empty() {
+                    std::env::set_var("ANTHROPIC_MODEL", &new_config.model);
+                }
             }
             let _ = tx.send(SettingsEvent::Hide);
         }

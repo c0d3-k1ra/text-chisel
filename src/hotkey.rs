@@ -8,9 +8,9 @@ pub enum HotKeyEvent {
     RewriteTriggered,
 }
 
-pub fn run() -> mpsc::Receiver<HotKeyEvent> {
+pub fn run() -> anyhow::Result<mpsc::Receiver<HotKeyEvent>> {
     let (tx, rx) = mpsc::channel();
-    let manager = register_hotkey().unwrap();
+    let manager = register_hotkey()?;
     // GlobalHotKeyManager must stay alive for the hotkey to remain registered.
     // Leaking it is intentional — it lives for the entire process lifetime.
     Box::leak(Box::new(manager));
@@ -24,7 +24,7 @@ pub fn run() -> mpsc::Receiver<HotKeyEvent> {
         }
     });
 
-    rx
+    Ok(rx)
 }
 
 fn register_hotkey() -> anyhow::Result<GlobalHotKeyManager> {

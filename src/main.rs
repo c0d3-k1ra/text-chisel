@@ -6,8 +6,6 @@ mod rewrite;
 mod settings_window;
 mod tray;
 
-use std::sync::{Arc, Mutex};
-
 use hotkey::HotKeyEvent;
 use tao::event::{Event, StartCause, WindowEvent};
 use tao::event_loop::{ControlFlow, EventLoop};
@@ -19,9 +17,12 @@ fn notify_error(message: &str) {
         .replace(['\n', '\r'], " ");
     let safe = if safe.len() > 150 { &safe[..150] } else { &safe };
     let script = format!("display notification \"{safe}\" with title \"Text Chisel\" sound name \"Basso\"");
-    let _ = std::process::Command::new("osascript")
+    if let Err(e) = std::process::Command::new("osascript")
         .args(["-e", &script])
-        .spawn();
+        .spawn()
+    {
+        log::warn!("osascript spawn failed: {}", e);
+    }
 }
 
 fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
@@ -102,11 +103,14 @@ fn main() {
         }
     }
 
-    let rx = hotkey::run();
+    let rx = hotkey::run().unwrap_or_else(|e| {
+        log::error!("failed to register hotkey: {}", e);
+        std::process::exit(1);
+    });
     log::info!("hotkey registered: Cmd+Option+R");
 
     let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
-    let selected_tone: Arc<Mutex<&'static str>> = Arc::new(Mutex::new("Professional"));
+    let mut selected_tone: &'static str = "Professional";
 
     let event_loop = EventLoop::new();
 
@@ -128,6 +132,8 @@ fn main() {
         #[cfg(target_os = "macos")]
         if let Event::NewEvents(StartCause::Init) = event {
             #[allow(unexpected_cfgs)]
+            // SAFETY: called once on the main thread inside StartCause::Init,
+            // before any other windows or threads interact with NSApplication.
             unsafe {
                 use objc::{class, msg_send, sel, sel_impl};
                 let app: *mut objc::runtime::Object =
@@ -148,8 +154,7 @@ fn main() {
 
         if let Ok(HotKeyEvent::RewriteTriggered) = rx.try_recv() {
             log::info!("hotkey fired");
-            let tone = *selected_tone.lock().unwrap();
-            handle_hotkey(&rt, tone);
+            handle_hotkey(&rt, selected_tone);
         }
 
         if let Ok(event) = tray_icon::menu::MenuEvent::receiver().try_recv() {
@@ -163,7 +168,7 @@ fn main() {
             }
             if let Some((_, tone)) = tray.tone_ids.iter().find(|(id, _)| *id == event.id) {
                 log::info!("tone changed to: {}", tone);
-                *selected_tone.lock().unwrap() = tone;
+                selected_tone = tone;
                 tray.set_tone(tone);
             }
         }

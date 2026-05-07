@@ -107,3 +107,61 @@ pub async fn rewrite_with_key(text: &str, tone: &str, api_key: &str) -> anyhow::
     let response = call_api(api_key, &body).await?;
     parse_response(response)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- validate ---
+
+    #[test]
+    fn validate_empty_ok() {
+        assert!(validate("").is_ok());
+    }
+
+    #[test]
+    fn validate_at_limit_ok() {
+        assert!(validate(&"a".repeat(MAX_INPUT_CHARS)).is_ok());
+    }
+
+    #[test]
+    fn validate_over_limit_err() {
+        let err = validate(&"a".repeat(MAX_INPUT_CHARS + 1)).unwrap_err();
+        assert!(err.to_string().contains("too long"));
+    }
+
+    // --- build_request ---
+
+    #[test]
+    fn build_request_shape() {
+        let req = build_request("hello world", "Professional");
+        assert_eq!(req.max_tokens, 1024);
+        assert_eq!(req.messages.len(), 1);
+        assert_eq!(req.messages[0].role, "user");
+    }
+
+    #[test]
+    fn build_request_content_contains_text_and_tone() {
+        let req = build_request("fix this sentence", "Concise");
+        assert!(req.messages[0].content.contains("fix this sentence"));
+        assert!(req.messages[0].content.contains("Concise"));
+    }
+
+    // --- parse_response ---
+
+    #[test]
+    fn parse_response_returns_first_text() {
+        let resp = ResponseBody {
+            content: vec![ResponseContent {
+                text: "rewritten".to_string(),
+            }],
+        };
+        assert_eq!(parse_response(resp).unwrap(), "rewritten");
+    }
+
+    #[test]
+    fn parse_response_empty_content_errs() {
+        let resp = ResponseBody { content: vec![] };
+        assert!(parse_response(resp).is_err());
+    }
+}

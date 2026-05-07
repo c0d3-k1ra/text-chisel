@@ -27,6 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: "false"
       - name: Format check
         run: cargo fmt --check
       - name: Clippy
@@ -39,6 +41,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: "false"
       - name: Test
         run: cargo test --verbose -- rewrite config clipboard hotkey
 
@@ -52,6 +56,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: "false"
 
       - name: Check version matches tag
         run: |

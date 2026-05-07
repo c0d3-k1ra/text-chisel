@@ -3,6 +3,7 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -40,3 +41,43 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Test
         run: cargo test --verbose -- rewrite config clipboard hotkey
+
+  release:
+    name: Release
+    runs-on: macos-14
+    needs: [ build, format, test ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check version matches tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          CARGO_VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match Cargo.toml version $CARGO_VERSION"
+            exit 1
+          fi
+
+      - name: Install cargo-bundle
+        run: cargo install cargo-bundle --locked
+
+      - name: Bundle .app
+        run: cargo bundle --release
+
+      - name: Zip .app
+        run: |
+          cd target/release/bundle/osx
+          zip -r "Text-Chisel-${GITHUB_REF_NAME}.zip" "Text Chisel.app"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Text Chisel ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            "target/release/bundle/osx/Text-Chisel-${GITHUB_REF_NAME}.zip"

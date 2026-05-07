@@ -2,32 +2,41 @@
 
 [![Rust](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml/badge.svg)](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml)
 
-A macOS menu bar app that rewrites selected text using Claude AI. Runs silently in the background — select text, press a hotkey, get it back rewritten.
+A macOS menu bar app that rewrites selected text using Claude AI. Lives in your menu bar, stays out of your way — select text anywhere, press a hotkey, get it back polished.
+
+---
 
 ## How it works
 
 1. Select text in any app — Slack, Gmail, Notes, Terminal, anywhere
-2. Press **Cmd+Option+R**
-3. The selected text is rewritten in your chosen tone and pasted back automatically
+2. Press **⌘⌥R** (Cmd+Option+R)
+3. Text Chisel rewrites it in your chosen tone and pastes it back automatically
+
+No copy-paste. No switching windows. No context lost.
+
+---
 
 ## Tones
 
-Switch tone anytime from the menu bar icon:
+Pick a tone from the menu bar icon at any time:
 
-| Tone | Style |
-|------|-------|
-| Professional | Neutral and clear, polished without being authoritative |
-| Polite | Soft, respectful, non-confrontational |
-| Assertive | Firm and direct, highlights impact |
-| Concise | Minimal words, straight to the point |
-| Gen Z | Casual, internet-native, contemporary phrasing |
+| Tone | What it does |
+| ---- | ------------ |
+| **Professional** | Neutral and polished — clear without being stiff |
+| **Polite** | Soft and respectful — takes the edge off |
+| **Assertive** | Direct and firm — makes the point land |
+| **Concise** | Strips it down — no filler, no fluff |
+| **Gen Z** | Casual and internet-native — lowercase, emojis, the whole bit |
+
+---
 
 ## Requirements
 
-- macOS
-- Rust toolchain (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
-- Anthropic API key ([get one here](https://console.anthropic.com/))
-- Accessibility permissions (for Cmd+C / Cmd+V simulation)
+- macOS 12 or later
+- An [Anthropic API key](https://console.anthropic.com/)
+- Accessibility permission (so the app can simulate Cmd+C and Cmd+V)
+
+---
 
 ## Setup
 
@@ -37,50 +46,84 @@ cd text-chisel
 cargo run
 ```
 
-On first launch, the Settings window opens automatically. Enter your Anthropic API key and click **Save**.
+On first launch, the Settings window opens automatically. Paste your Anthropic API key and click **Save**.
 
-macOS will also prompt for Accessibility access — approve it in **System Settings → Privacy & Security → Accessibility**.
+macOS will prompt for Accessibility access the first time — approve it in **System Settings → Privacy & Security → Accessibility**.
+
+### Build a standalone .app bundle
+
+```bash
+cargo install cargo-bundle
+cargo bundle --release
+```
+
+The app is output to `target/release/bundle/osx/Text Chisel.app`. Drag it to `/Applications` to install.
+
+---
 
 ## Settings
 
 Click the menu bar icon → **Settings** to configure:
 
-- **Anthropic API Key** — your `sk-ant-...` key
-- **Model** — Haiku 4.5 (fast) or Sonnet 4.6 (quality)
+- **API Key** — your `sk-ant-...` key from [console.anthropic.com](https://console.anthropic.com/)
+- **Model** — `claude-haiku-4-5` for speed, `claude-sonnet-4-6` for higher quality
+- **Test Connection** — verifies the key is valid before saving
 
 Settings are saved to `~/.config/text-chisel/config.toml`.
 
-## Build
+---
 
-```bash
-cargo build --release
-```
+## Error notifications
 
-The binary is at `target/release/text-chisel`. Copy it anywhere and run it — no installation needed.
+When something goes wrong, Text Chisel shows a macOS notification with a Basso sound so you always know what happened:
+
+| Situation | Message |
+|-----------|---------|
+| Nothing selected | Select some text first, then press ⌘⌥R |
+| No API key | Add your Anthropic API key in Settings to get started |
+| Invalid API key | API key not accepted. Open Settings to update it |
+| Selection too long | Try again with under 8,000 characters |
+| Rate limited | Too many requests. Wait a moment and try again |
+| Claude busy | Claude is busy right now. Give it a moment and try again |
+| Timeout | Claude took too long to respond. Try again in a moment |
+| Accessibility denied | Enable Accessibility access in System Settings |
+
+**Notification tip:** For notifications to appear as banners on screen (rather than arriving silently), go to **System Settings → Notifications → Script Editor** and set the alert style to **Banners** or **Alerts**.
+
+---
 
 ## Logging
 
-Run with `RUST_LOG=debug` to see detailed logs including clipboard contents and API responses:
-
 ```bash
-RUST_LOG=debug cargo run
+RUST_LOG=debug cargo run    # verbose — clipboard contents, API calls, timing
+cargo run                   # default info level
 ```
 
-Default log level is `info`.
+---
 
 ## Project structure
 
 ```
 src/
-├── main.rs            # entry point, event loop
-├── clipboard.rs       # copy selection, paste text
-├── hotkey.rs          # global hotkey registration
-├── rewrite.rs         # Claude API call
+├── main.rs            # entry point, event loop, hotkey dispatch
+├── clipboard.rs       # Cmd+C to read selection, Cmd+V to paste back
+├── hotkey.rs          # global Cmd+Option+R registration
+├── rewrite.rs         # Claude API call and response parsing
 ├── prompts.rs         # system and user prompt templates
-├── tray.rs            # menu bar icon and menu
+├── tray.rs            # menu bar icon and tone menu
 ├── settings_window.rs # settings UI (wry webview)
-└── config.rs          # config file load/save
+└── config.rs          # load/save ~/.config/text-chisel/config.toml
 assets/
-├── icon.svg           # menu bar icon
+├── icon.svg           # menu bar icon source
+├── icon.icns          # compiled macOS icon for .app bundle
 └── settings.html      # settings window UI
 ```
+
+---
+
+## Limitations
+
+- **macOS only** — relies on AppKit, global hotkeys, and osascript
+- **Accessibility required** — the app cannot simulate Cmd+C/Cmd+V without it
+- **8,000 character limit** — selections longer than this are rejected to keep API costs low
+- **No offline mode** — requires a live Anthropic API connection

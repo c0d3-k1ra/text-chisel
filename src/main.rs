@@ -1,6 +1,7 @@
 mod clipboard;
 mod config;
 mod hotkey;
+mod login_item;
 mod prompts;
 mod rewrite;
 mod settings_window;
@@ -121,7 +122,7 @@ fn main() {
 
     let event_loop = EventLoop::new();
 
-    let tray = tray::build();
+    let tray = tray::build(login_item::is_enabled());
     log::info!("tray icon created");
 
     let settings_win = settings_window::build(&event_loop, &cfg);
@@ -172,6 +173,21 @@ fn main() {
             if event.id == tray.settings_id {
                 log::debug!("opening settings window");
                 settings_win.show();
+            }
+            if event.id == tray.login_id {
+                let enabling = !login_item::is_enabled();
+                let result = if enabling {
+                    login_item::enable()
+                } else {
+                    login_item::disable()
+                };
+                match result {
+                    Ok(_) => tray.set_launch_at_login(enabling),
+                    Err(e) => {
+                        log::error!("launch at login toggle failed: {}", e);
+                        notify_error("Could not update launch at login setting. Check logs for details.");
+                    }
+                }
             }
             if let Some((_, tone)) = tray.tone_ids.iter().find(|(id, _)| *id == event.id) {
                 log::info!("tone changed to: {}", tone);

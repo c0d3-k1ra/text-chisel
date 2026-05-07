@@ -6,8 +6,10 @@ const DEFAULT_TONE: &str = "Professional";
 pub struct Tray {
     pub quit_id: tray_icon::menu::MenuId,
     pub settings_id: tray_icon::menu::MenuId,
+    pub login_id: tray_icon::menu::MenuId,
     pub tone_ids: Vec<(tray_icon::menu::MenuId, &'static str)>,
     tone_items: Vec<CheckMenuItem>,
+    login_item: CheckMenuItem,
     _icon: tray_icon::TrayIcon,
 }
 
@@ -17,13 +19,19 @@ impl Tray {
             item.set_checked(*t == tone);
         }
     }
+
+    pub fn set_launch_at_login(&self, enabled: bool) {
+        self.login_item.set_checked(enabled);
+    }
 }
 
-pub fn build() -> Tray {
+pub fn build(launch_at_login: bool) -> Tray {
     let icon = load_icon();
     let hotkey_item = MenuItem::new("⌘⌥R  Rewrite selected text", false, None);
     let settings_item = MenuItem::new("Settings", true, None);
     let settings_id = settings_item.id().clone();
+    let login_item = CheckMenuItem::new("Launch at Login", true, launch_at_login, None);
+    let login_id = login_item.id().clone();
     let quit_item = MenuItem::new("Quit", true, None);
     let quit_id = quit_item.id().clone();
 
@@ -50,6 +58,10 @@ pub fn build() -> Tray {
         .expect("failed to append separator");
     menu.append(&settings_item)
         .expect("failed to append settings item");
+    menu.append(&login_item)
+        .expect("failed to append login item");
+    menu.append(&PredefinedMenuItem::separator())
+        .expect("failed to append separator");
     menu.append(&quit_item).expect("failed to append quit item");
 
     let _icon = tray_icon::TrayIconBuilder::new()
@@ -63,8 +75,10 @@ pub fn build() -> Tray {
     Tray {
         quit_id,
         settings_id,
+        login_id,
         tone_ids,
         tone_items,
+        login_item,
         _icon,
     }
 }

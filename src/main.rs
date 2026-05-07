@@ -15,8 +15,13 @@ fn notify_error(message: &str) {
         .replace('\\', "\\\\")
         .replace('"', "'")
         .replace(['\n', '\r'], " ");
-    let safe = if safe.len() > 150 { &safe[..150] } else { &safe };
-    let script = format!("display notification \"{safe}\" with title \"Text Chisel\" sound name \"Basso\"");
+    let safe = if safe.len() > 150 {
+        &safe[..150]
+    } else {
+        &safe
+    };
+    let script =
+        format!("display notification \"{safe}\" with title \"Text Chisel\" sound name \"Basso\"");
     if let Err(e) = std::process::Command::new("osascript")
         .args(["-e", &script])
         .spawn()
@@ -78,7 +83,9 @@ fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
         Ok(_) => log::info!("pasted successfully"),
         Err(e) => {
             log::error!("paste error: {}", e);
-            notify_error("Text was rewritten but could not be pasted. Check Accessibility access in System Settings.");
+            notify_error(
+                "Text was rewritten but could not be pasted. Check Accessibility access in System Settings.",
+            );
         }
     }
 }

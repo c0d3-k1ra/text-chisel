@@ -45,11 +45,11 @@ pub(crate) fn load_from(p: &Path) -> Config {
 }
 
 pub(crate) fn save_to(config: &Config, p: &Path) {
-    if let Some(parent) = p.parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
-            log::error!("config: failed to create directory: {}", e);
-            return;
-        }
+    if let Some(parent) = p.parent()
+        && let Err(e) = std::fs::create_dir_all(parent)
+    {
+        log::error!("config: failed to create directory: {}", e);
+        return;
     }
     match toml::to_string(config) {
         Ok(s) => match std::fs::write(p, &s) {

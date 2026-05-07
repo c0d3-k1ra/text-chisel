@@ -44,10 +44,10 @@ pub fn paste_text(text: &str) -> anyhow::Result<()> {
     let result = simulate_paste();
 
     std::thread::sleep(std::time::Duration::from_millis(PASTE_SETTLE_MS));
-    if let Some(original_text) = original {
-        if let Err(e) = clipboard.set_text(original_text) {
-            log::warn!("failed to restore clipboard: {}", e);
-        }
+    if let Some(original_text) = original
+        && let Err(e) = clipboard.set_text(original_text)
+    {
+        log::warn!("failed to restore clipboard: {}", e);
     }
 
     result

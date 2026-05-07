@@ -12,6 +12,18 @@ use hotkey::HotKeyEvent;
 use tao::event::{Event, StartCause, WindowEvent};
 use tao::event_loop::{ControlFlow, EventLoop};
 
+fn notify_error(message: &str) {
+    let safe = message
+        .replace('\\', "\\\\")
+        .replace('"', "'")
+        .replace(['\n', '\r'], " ");
+    let safe = if safe.len() > 150 { &safe[..150] } else { &safe };
+    let script = format!("display notification \"{safe}\" with title \"Text Chisel\"");
+    let _ = std::process::Command::new("osascript")
+        .args(["-e", &script])
+        .spawn();
+}
+
 fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
     log::info!("rewriting with tone: {}", tone);
 
@@ -22,6 +34,7 @@ fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
         }
         Err(e) => {
             log::error!("clipboard error: {}", e);
+            notify_error(&format!("Could not read selected text: {e}"));
             return;
         }
     };
@@ -34,13 +47,17 @@ fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
         }
         Err(e) => {
             log::error!("API error: {}", e);
+            notify_error(&format!("Rewrite failed: {e}"));
             return;
         }
     };
 
     match clipboard::paste_text(&rewritten) {
         Ok(_) => log::info!("pasted successfully"),
-        Err(e) => log::error!("paste error: {}", e),
+        Err(e) => {
+            log::error!("paste error: {}", e);
+            notify_error(&format!("Paste failed: {e}"));
+        }
     }
 }
 

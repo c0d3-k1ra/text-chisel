@@ -73,11 +73,21 @@ jobs:
           cd target/release/bundle/osx
           zip -r "Text-Chisel-${GITHUB_REF_NAME}.zip" "Text Chisel.app"
 
+      - name: Extract release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" \
+            CHANGELOG.md > release_notes.txt
+          if [ ! -s release_notes.txt ]; then
+            echo "::error::No entry for version ${VERSION} found in CHANGELOG.md"
+            exit 1
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${GITHUB_REF_NAME}" \
             --title "Text Chisel ${GITHUB_REF_NAME}" \
-            --generate-notes \
+            --notes-file release_notes.txt \
             "target/release/bundle/osx/Text-Chisel-${GITHUB_REF_NAME}.zip"

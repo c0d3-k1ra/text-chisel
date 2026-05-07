@@ -77,6 +77,12 @@ mod tests {
     }
 
     #[test]
+    fn path_ends_with_config_toml() {
+        let p = path();
+        assert!(p.ends_with("text-chisel/config.toml"));
+    }
+
+    #[test]
     fn round_trip() {
         let p = tmp_path("round-trip");
         let original = Config {

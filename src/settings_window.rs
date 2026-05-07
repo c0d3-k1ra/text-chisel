@@ -72,6 +72,16 @@ pub fn build(event_loop: &EventLoop<()>, config: &Config) -> SettingsWindow {
     }
 }
 
+fn config_from_save_payload(value: &serde_json::Value, original: &Config) -> Config {
+    Config {
+        api_key: value["apiKey"].as_str().unwrap_or("").to_string(),
+        model: value["model"]
+            .as_str()
+            .unwrap_or(&original.model)
+            .to_string(),
+    }
+}
+
 fn build_html(config: &Config) -> String {
     let template = include_str!("../assets/settings.html");
     let api_key_json = serde_json::to_string(&config.api_key).unwrap_or_default();
@@ -91,13 +101,7 @@ fn handle_ipc(msg: &str, original_config: &Config, tx: &mpsc::Sender<SettingsEve
     match value["action"].as_str() {
         Some("save") => {
             log::info!("settings: saving config");
-            let new_config = Config {
-                api_key: value["apiKey"].as_str().unwrap_or("").to_string(),
-                model: value["model"]
-                    .as_str()
-                    .unwrap_or(&original_config.model)
-                    .to_string(),
-            };
+            let new_config = config_from_save_payload(&value, original_config);
             config::save(&new_config);
             // SAFETY: called from the wry IPC callback, which runs on the main
             // thread before any concurrent rewrite is in flight.
@@ -198,6 +202,43 @@ mod tests {
         };
         let html = build_html(&cfg);
         assert!(!html.is_empty());
+    }
+
+    // --- handle_ipc ---
+
+    // --- config_from_save_payload ---
+
+    #[test]
+    fn config_from_save_payload_uses_provided_values() {
+        let original = default_config();
+        let value = serde_json::json!({ "apiKey": "new-key", "model": "claude-sonnet-4-6" });
+        let cfg = config_from_save_payload(&value, &original);
+        assert_eq!(cfg.api_key, "new-key");
+        assert_eq!(cfg.model, "claude-sonnet-4-6");
+    }
+
+    #[test]
+    fn config_from_save_payload_falls_back_to_original_model() {
+        let original = default_config();
+        let value = serde_json::json!({ "apiKey": "new-key" });
+        let cfg = config_from_save_payload(&value, &original);
+        assert_eq!(cfg.model, original.model);
+    }
+
+    #[test]
+    fn config_from_save_payload_empty_api_key() {
+        let original = default_config();
+        let value = serde_json::json!({ "apiKey": "", "model": "claude-haiku-4-5-20251001" });
+        let cfg = config_from_save_payload(&value, &original);
+        assert!(cfg.api_key.is_empty());
+    }
+
+    #[test]
+    fn config_from_save_payload_missing_api_key_defaults_to_empty() {
+        let original = default_config();
+        let value = serde_json::json!({ "model": "claude-haiku-4-5-20251001" });
+        let cfg = config_from_save_payload(&value, &original);
+        assert!(cfg.api_key.is_empty());
     }
 
     // --- handle_ipc ---

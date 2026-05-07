@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 
@@ -20,14 +20,7 @@ fn xml_escape(s: &str) -> String {
         .replace('\'', "&apos;")
 }
 
-pub(crate) fn is_enabled() -> bool {
-    plist_path().map(|p| p.exists()).unwrap_or(false)
-}
-
-pub(crate) fn enable() -> anyhow::Result<()> {
-    let exe = std::env::current_exe().context("failed to get current executable path")?;
-    let p = plist_path()?;
-
+fn write_plist(p: &Path, exe: &Path) -> anyhow::Result<()> {
     if let Some(parent) = p.parent() {
         std::fs::create_dir_all(parent).context("failed to create LaunchAgents directory")?;
     }
@@ -54,8 +47,24 @@ pub(crate) fn enable() -> anyhow::Result<()> {
         exe = xml_escape(&exe.to_string_lossy())
     );
 
-    std::fs::write(&p, &plist).context("failed to write LaunchAgent plist")?;
+    std::fs::write(p, &plist).context("failed to write LaunchAgent plist")
+}
 
+fn remove_plist(p: &Path) -> anyhow::Result<()> {
+    if p.exists() {
+        std::fs::remove_file(p).context("failed to remove LaunchAgent plist")?;
+    }
+    Ok(())
+}
+
+pub(crate) fn is_enabled() -> bool {
+    plist_path().map(|p| p.exists()).unwrap_or(false)
+}
+
+pub(crate) fn enable() -> anyhow::Result<()> {
+    let exe = std::env::current_exe().context("failed to get current executable path")?;
+    let p = plist_path()?;
+    write_plist(&p, &exe)?;
     // Intentionally not calling `launchctl bootstrap` here — doing so with
     // RunAtLoad=true would spawn a second instance immediately. The plist
     // in ~/Library/LaunchAgents/ is sufficient for macOS to pick it up at
@@ -66,11 +75,7 @@ pub(crate) fn enable() -> anyhow::Result<()> {
 
 pub(crate) fn disable() -> anyhow::Result<()> {
     let p = plist_path()?;
-
-    if p.exists() {
-        std::fs::remove_file(&p).context("failed to remove LaunchAgent plist")?;
-    }
-
+    remove_plist(&p)?;
     log::info!("launch at login disabled");
     Ok(())
 }
@@ -78,6 +83,10 @@ pub(crate) fn disable() -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn tmp_plist(tag: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("text-chisel-test-{}.plist", tag))
+    }
 
     // --- xml_escape ---
 
@@ -122,12 +131,64 @@ mod tests {
         assert!(p.ends_with("Library/LaunchAgents/com.textchisel.app.plist"));
     }
 
+    // --- write_plist ---
+
+    #[test]
+    fn write_plist_creates_file_with_label_and_run_at_load() {
+        let p = tmp_plist("write");
+        let exe = Path::new("/usr/local/bin/text-chisel");
+        write_plist(&p, exe).unwrap();
+        let content = std::fs::read_to_string(&p).unwrap();
+        assert!(content.contains("com.textchisel.app"));
+        assert!(content.contains("RunAtLoad"));
+        assert!(content.contains("/usr/local/bin/text-chisel"));
+        let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn write_plist_xml_escapes_exe_path() {
+        let p = tmp_plist("escape");
+        let exe = Path::new("/Applications/Apps & Stuff/text-chisel");
+        write_plist(&p, exe).unwrap();
+        let content = std::fs::read_to_string(&p).unwrap();
+        assert!(content.contains("Apps &amp; Stuff"));
+        assert!(!content.contains("Apps & Stuff"));
+        let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn write_plist_creates_parent_directory() {
+        let dir = std::env::temp_dir().join("text-chisel-test-mkdir");
+        let p = dir.join("test.plist");
+        let exe = Path::new("/usr/local/bin/text-chisel");
+        write_plist(&p, exe).unwrap();
+        assert!(p.exists());
+        let _ = std::fs::remove_file(&p);
+        let _ = std::fs::remove_dir(&dir);
+    }
+
+    // --- remove_plist ---
+
+    #[test]
+    fn remove_plist_deletes_existing_file() {
+        let p = tmp_plist("remove");
+        std::fs::write(&p, "test").unwrap();
+        remove_plist(&p).unwrap();
+        assert!(!p.exists());
+    }
+
+    #[test]
+    fn remove_plist_noop_when_file_absent() {
+        let p = tmp_plist("no-file");
+        let _ = std::fs::remove_file(&p);
+        assert!(remove_plist(&p).is_ok());
+    }
+
     // --- roundtrip (manual) ---
 
     #[test]
     #[ignore = "Writes and removes ~/Library/LaunchAgents/com.textchisel.app.plist on the real filesystem. Run manually to verify enable/disable works correctly."]
     fn test_launch_at_login_roundtrip() {
-        // Start clean.
         if is_enabled() {
             disable().expect("failed to disable before test");
         }
@@ -136,7 +197,6 @@ mod tests {
         enable().expect("enable failed");
         assert!(is_enabled(), "should be enabled after enable");
 
-        // Verify plist is well-formed and contains expected fields.
         let p = plist_path().unwrap();
         let content = std::fs::read_to_string(&p).expect("plist not found after enable");
         assert!(

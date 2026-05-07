@@ -1,4 +1,4 @@
-use tray_icon::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
+use tray_icon::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 pub const TONES: &[&str] = &["Professional", "Polite", "Assertive", "Concise", "Gen Z"];
 const DEFAULT_TONE: &str = "Professional";
@@ -9,15 +9,22 @@ pub struct Tray {
     pub login_id: tray_icon::menu::MenuId,
     pub tone_ids: Vec<(tray_icon::menu::MenuId, &'static str)>,
     tone_items: Vec<CheckMenuItem>,
+    tone_submenu: Submenu,
     login_item: CheckMenuItem,
     _icon: tray_icon::TrayIcon,
 }
 
 impl Tray {
     pub fn set_tone(&self, tone: &str) {
+        debug_assert!(
+            TONES.contains(&tone),
+            "set_tone called with unknown tone: {}",
+            tone
+        );
         for (item, t) in self.tone_items.iter().zip(TONES.iter()) {
             item.set_checked(*t == tone);
         }
+        self.tone_submenu.set_text(format!("Tone: {}", tone));
     }
 
     pub fn set_launch_at_login(&self, enabled: bool) {
@@ -46,14 +53,20 @@ pub fn build(launch_at_login: bool) -> Tray {
         .map(|(item, t)| (item.id().clone(), *t))
         .collect();
 
+    let tone_submenu = Submenu::new(format!("Tone: {}", DEFAULT_TONE), true);
+    for item in &tone_items {
+        tone_submenu
+            .append(item)
+            .expect("failed to append tone item");
+    }
+
     let menu = Menu::new();
     menu.append(&hotkey_item)
         .expect("failed to append hotkey item");
     menu.append(&PredefinedMenuItem::separator())
         .expect("failed to append separator");
-    for item in &tone_items {
-        menu.append(item).expect("failed to append tone item");
-    }
+    menu.append(&tone_submenu)
+        .expect("failed to append tone submenu");
     menu.append(&PredefinedMenuItem::separator())
         .expect("failed to append separator");
     menu.append(&settings_item)
@@ -78,8 +91,29 @@ pub fn build(launch_at_login: bool) -> Tray {
         login_id,
         tone_ids,
         tone_items,
+        tone_submenu,
         login_item,
         _icon,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tones_contains_all_expected_values() {
+        assert!(TONES.contains(&"Professional"));
+        assert!(TONES.contains(&"Polite"));
+        assert!(TONES.contains(&"Assertive"));
+        assert!(TONES.contains(&"Concise"));
+        assert!(TONES.contains(&"Gen Z"));
+        assert_eq!(TONES.len(), 5);
+    }
+
+    #[test]
+    fn default_tone_is_in_tones() {
+        assert!(TONES.contains(&DEFAULT_TONE));
     }
 }
 

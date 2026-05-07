@@ -23,8 +23,8 @@ struct Message {
 struct RequestBody {
     model: String,
     max_tokens: u32,
+    system: String,
     messages: Vec<Message>,
-    system: &'static str,
 }
 
 #[derive(Deserialize)]
@@ -52,10 +52,10 @@ fn build_request(text: &str, tone: &str) -> RequestBody {
     RequestBody {
         model: std::env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| DEFAULT_MODEL.to_string()),
         max_tokens: 1024,
-        system: crate::prompts::SYSTEM,
+        system: crate::prompts::system(tone),
         messages: vec![Message {
             role: "user",
-            content: crate::prompts::user(tone, text),
+            content: crate::prompts::user(text),
         }],
     }
 }
@@ -141,10 +141,11 @@ mod tests {
     }
 
     #[test]
-    fn build_request_content_contains_text_and_tone() {
+    fn build_request_content_contains_text() {
         let req = build_request("fix this sentence", "Concise");
-        assert!(req.messages[0].content.contains("fix this sentence"));
-        assert!(req.messages[0].content.contains("Concise"));
+        assert_eq!(req.messages[0].content, "fix this sentence");
+        assert!(req.system.contains("Concise"));
+        assert!(req.system.contains("Cut every word"));
     }
 
     // --- parse_response ---

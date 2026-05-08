@@ -2,6 +2,9 @@
 
 [![Rust](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml/badge.svg)](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-12%2B-black?logo=apple)](https://www.apple.com/macos/)
+[![Rust 2024](https://img.shields.io/badge/Rust-2024%20edition-orange?logo=rust)](https://blog.rust-lang.org/2025/02/20/Rust-2024.html)
+[![GitHub release](https://img.shields.io/github/v/release/c0d3-k1ra/text-chisel)](https://github.com/c0d3-k1ra/text-chisel/releases/latest)
 
 **Select text anywhere on your Mac. Press ⌘⌥R. Get it back polished.**
 

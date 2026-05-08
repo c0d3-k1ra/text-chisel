@@ -3,33 +3,52 @@
 [![Rust](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml/badge.svg)](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A macOS menu bar app that rewrites selected text using Claude AI. Lives in your menu bar, stays out of your way — select text anywhere, press a hotkey, get it back polished.
+**Select text anywhere on your Mac. Press ⌘⌥R. Get it back polished.**
+
+Text Chisel lives in your menu bar and rewrites selected text using Claude AI — no copy-paste, no switching windows, no losing context. Works in any app.
+
+https://github.com/c0d3-k1ra/text-chisel/raw/main/.github/assets/overview.mov
 
 ---
 
-## How it works
+## Menu bar
 
-1. Select text in any app — Slack, Gmail, Notes, Terminal, anywhere
-2. Press **⌘⌥R** (Cmd+Option+R)
-3. Text Chisel rewrites it in your chosen tone and pastes it back automatically
+<img src=".github/assets/menu-bar.png" width="260" alt="Text Chisel menu bar" />
 
-No copy-paste. No switching windows. No context lost.
+The icon shows your connection status at a glance — 🟢 Connected, 🔴 Not connected, ⏳ Checking. Everything you need is one click away.
 
 ---
 
-## Tones
+## Five tones
 
-Pick a tone from **menu bar icon → Tone**:
+<img src=".github/assets/tones.png" width="420" alt="Tone selector" />
+
+Pick the right voice for the moment from **Tone** in the menu:
 
 | Tone | What it does |
-| ---- | ------------ |
+| --- | --- |
 | **Professional** | Neutral and polished — clear without being stiff |
 | **Polite** | Soft and respectful — takes the edge off |
 | **Assertive** | Direct and firm — makes the point land |
 | **Concise** | Strips it down — no filler, no fluff |
 | **Gen Z** | Casual and internet-native — lowercase, emojis, the whole bit |
 
-The active tone is shown in the submenu title (e.g. "Tone: Concise ▶") so you can always see your selection without opening it.
+The active tone is shown in the submenu title so you always know your selection without opening it.
+
+---
+
+## Settings
+
+<img src=".github/assets/settings.png" width="420" alt="Settings window" />
+
+Click **Settings** to configure your API key and model. Hit **Test connection** to verify before saving.
+
+| Setting | Options |
+| --- | --- |
+| API Key | Your `sk-ant-...` key from [console.anthropic.com](https://console.anthropic.com/) |
+| Model | Haiku 4.5 — speed · Sonnet 4.6 — quality |
+
+Settings are saved to `~/.config/text-chisel/config.toml`.
 
 ---
 
@@ -37,138 +56,70 @@ The active tone is shown in the submenu title (e.g. "Tone: Concise ▶") so you 
 
 - macOS 12 or later
 - An [Anthropic API key](https://console.anthropic.com/)
-- Accessibility permission (so the app can simulate Cmd+C and Cmd+V)
+- Accessibility permission (for simulating ⌘C and ⌘V)
 
 ---
 
-## Setup
+## Install
 
-```bash
-git clone https://github.com/c0d3-k1ra/text-chisel
-cd text-chisel
-git config core.hooksPath .githooks
-cargo run
-```
+### Download
 
-`git config core.hooksPath .githooks` installs the project's git hooks — `fmt` + `clippy` on commit, tests on push. Run it once after cloning.
+Grab the latest `.zip` from [Releases](https://github.com/c0d3-k1ra/text-chisel/releases), unzip, and drag **Text Chisel.app** to `/Applications`.
 
-On first launch, the Settings window opens automatically. Paste your Anthropic API key and click **Save**.
-
-macOS will prompt for Accessibility access the first time — approve it in **System Settings → Privacy & Security → Accessibility**.
-
-### Build a standalone .app bundle
-
-```bash
-cargo install cargo-bundle
-cargo bundle --release
-```
-
-The app is output to `target/release/bundle/osx/Text Chisel.app`. Drag it to `/Applications` to install.
-
-### Gatekeeper warning
-
-The app is not signed with an Apple Developer certificate, so macOS will block it on first launch with a "cannot be opened because the developer cannot be verified" message. To bypass it, run this once after installing:
+**First launch:** macOS will block an unsigned app. Run this once:
 
 ```bash
 xattr -cr "/Applications/Text Chisel.app"
 ```
 
-Then launch normally. You only need to do this once.
+Then launch normally.
+
+### Build from source
+
+```bash
+git clone https://github.com/c0d3-k1ra/text-chisel
+cd text-chisel
+git config core.hooksPath .githooks
+cargo install cargo-bundle
+cargo bundle --release
+```
+
+The app is output to `target/release/bundle/osx/Text Chisel.app`.
 
 ---
 
-## Settings
+## First run
 
-Click the menu bar icon → **Settings** to configure:
-
-- **API Key** — your `sk-ant-...` key from [console.anthropic.com](https://console.anthropic.com/)
-- **Model** — `claude-haiku-4-5` for speed, `claude-sonnet-4-6` for higher quality
-- **Test Connection** — verifies the key is valid before saving
-
-Settings are saved to `~/.config/text-chisel/config.toml`.
-
----
-
-## Menu bar
-
-The menu bar icon shows:
-
-- **Connection status** — 🟢 Connected, 🔴 Not connected, or ⏳ Checking... (checked on startup and after every settings save)
-- **Tone submenu** — active tone shown in the title, all five tones selectable
-- **Launch at Login** — toggle to start Text Chisel automatically on login
-- **Settings** — open the settings window
-- **Quit**
+On first launch the Settings window opens automatically. Paste your Anthropic API key, pick a model, and click **Save**. macOS will prompt for Accessibility access — approve it in **System Settings → Privacy & Security → Accessibility**.
 
 ---
 
 ## Error notifications
 
-When something goes wrong, Text Chisel shows a macOS notification with a Basso sound so you always know what happened:
+When something goes wrong, Text Chisel shows a macOS notification with a sound so you always know what happened:
 
 | Situation | Message |
-| --------- | ------- |
+| --- | --- |
 | Nothing selected | Select some text first, then press ⌘⌥R |
 | No API key | Add your Anthropic API key in Settings to get started |
 | Invalid API key | API key not accepted. Open Settings to update it |
 | Selection too long | Try again with under 8,000 characters |
 | Rate limited | Too many requests. Wait a moment and try again |
-| Claude busy | Claude is busy right now. Give it a moment and try again |
-| Timeout | Claude took too long to respond. Try again in a moment |
 | Accessibility denied | Enable Accessibility access in System Settings |
 
-**Notification tip:** For notifications to appear as banners on screen (rather than arriving silently), go to **System Settings → Notifications → Script Editor** and set the alert style to **Banners** or **Alerts**.
-
----
-
-## Logging
-
-```bash
-RUST_LOG=debug cargo run    # verbose — clipboard contents, API calls, timing
-cargo run                   # default info level
-```
-
----
-
-## Project structure
-
-```
-src/
-├── main.rs            # entry point, event loop, hotkey dispatch
-├── clipboard.rs       # Cmd+C to read selection, Cmd+V to paste back
-├── hotkey.rs          # global Cmd+Option+R registration
-├── rewrite.rs         # Claude API call and response parsing
-├── prompts.rs         # system prompt and per-tone instructions with few-shot examples
-├── tray.rs            # menu bar icon, tone submenu, status item, launch at login
-├── settings_window.rs # settings UI (wry webview)
-├── login_item.rs      # LaunchAgent plist — enable/disable launch at login
-└── config.rs          # load/save ~/.config/text-chisel/config.toml
-assets/
-├── icon.svg           # menu bar icon source
-├── icon.icns          # compiled macOS icon for .app bundle
-└── settings.html      # settings window UI
-```
-
----
-
-## Releasing
-
-Use the `/release` skill — it handles the changelog, version bump, signed commit, tag, and push automatically. Or manually:
-
-```bash
-# edit Cargo.toml and CHANGELOG.md, then:
-git add Cargo.toml Cargo.lock CHANGELOG.md
-git commit -S -m "release version x.y.z"
-git tag -a vx.y.z -m "release vx.y.z"
-git push origin main vx.y.z
-```
-
-GitHub Actions builds the `.app`, pulls release notes from `CHANGELOG.md`, and attaches the zip to the release automatically.
+> **Tip:** For notifications to appear on screen, go to **System Settings → Notifications → Script Editor** and set the alert style to **Banners** or **Alerts**.
 
 ---
 
 ## Limitations
 
 - **macOS only** — relies on AppKit, global hotkeys, and osascript
-- **Accessibility required** — the app cannot simulate Cmd+C/Cmd+V without it
-- **8,000 character limit** — selections longer than this are rejected to keep API costs low
+- **Accessibility required** — cannot simulate ⌘C/⌘V without it
+- **8,000 character limit** — longer selections are rejected to keep API costs low
 - **No offline mode** — requires a live Anthropic API connection
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

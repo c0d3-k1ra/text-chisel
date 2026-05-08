@@ -7,7 +7,7 @@
 
 Text Chisel lives in your menu bar and rewrites selected text using Claude AI — no copy-paste, no switching windows, no losing context. Works in any app.
 
-https://github.com/c0d3-k1ra/text-chisel/raw/main/.github/assets/overview.mov
+![Text Chisel demo](.github/assets/overview.gif)
 
 ---
 

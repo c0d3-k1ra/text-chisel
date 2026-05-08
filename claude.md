@@ -133,11 +133,23 @@ cargo bundle --release       # build .app bundle
 
 ## Releasing
 
-Bump `version` in `Cargo.toml`, commit, tag, push. CI verifies the tag matches the version, builds the `.app`, and creates a GitHub Release with auto-generated notes.
+Use the `/release` skill — it handles changelog, version bump, signed commit, tag, and push automatically. Or do it manually:
 
 ```bash
-git add Cargo.toml
-git commit -m "release version x.y.z"
-git tag vx.y.z
+git add Cargo.toml CHANGELOG.md
+git commit -S -m "release version x.y.z"   # signed, no co-author
+git tag -a vx.y.z -m "release vx.y.z"
 git push origin main vx.y.z
 ```
+
+CI verifies the tag matches the version, builds the `.app`, and creates a GitHub Release with auto-generated notes.
+
+## Agent skills
+
+Skills live in `.agents/skills/` and work with Claude Code (via `SKILL.md`) and Codex-style agents (via `AGENTS.md`).
+
+| Skill | Invoke | Purpose |
+| --- | --- | --- |
+| `text-chisel-review` | `/text-chisel-review` | Full code review against project and Rust rules |
+| `rust-skills` | `/rust-skills` | 179 Rust best-practice rules across 14 categories |
+| `release` | `/release [patch\|minor\|major]` | Changelog, version bump, signed commit, tag, push |

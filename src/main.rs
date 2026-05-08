@@ -48,6 +48,58 @@ fn spawn_connection_check(
     });
 }
 
+#[cfg(target_os = "macos")]
+fn setup_edit_menu() {
+    // SAFETY: called once on the main thread from StartCause::Init.
+    // Without an NSMenu containing Edit items (cut:, copy:, paste:, selectAll:),
+    // WKWebView cannot route standard keyboard shortcuts through the responder
+    // chain in apps that have no menu bar (NSApplicationActivationPolicyAccessory).
+    unsafe {
+        use std::os::raw::c_char;
+
+        use objc::runtime::{Object, Sel};
+        use objc::{class, msg_send, sel, sel_impl};
+
+        let nsstr = |s: &[u8]| -> *mut Object {
+            msg_send![class!(NSString), stringWithUTF8String: s.as_ptr() as *const c_char]
+        };
+
+        let menu_item = |title: &[u8], action: &str, key: &[u8]| -> *mut Object {
+            let item: *mut Object = msg_send![class!(NSMenuItem), alloc];
+            msg_send![
+                item,
+                initWithTitle: nsstr(title)
+                action: Sel::register(action)
+                keyEquivalent: nsstr(key)
+            ]
+        };
+
+        let main_menu: *mut Object = msg_send![class!(NSMenu), new];
+
+        // First item must be the app menu (can be empty)
+        let app_item: *mut Object = msg_send![class!(NSMenuItem), new];
+        let _: () = msg_send![main_menu, addItem: app_item];
+
+        // Edit menu
+        let edit_menu: *mut Object = msg_send![class!(NSMenu), new];
+        let _: () = msg_send![edit_menu, addItem: menu_item(b"Undo\0",       "undo:",      b"z\0")];
+        let _: () = msg_send![edit_menu, addItem: menu_item(b"Redo\0",       "redo:",      b"Z\0")];
+        let sep: *mut Object = msg_send![class!(NSMenuItem), separatorItem];
+        let _: () = msg_send![edit_menu, addItem: sep];
+        let _: () = msg_send![edit_menu, addItem: menu_item(b"Cut\0",        "cut:",       b"x\0")];
+        let _: () = msg_send![edit_menu, addItem: menu_item(b"Copy\0",       "copy:",      b"c\0")];
+        let _: () = msg_send![edit_menu, addItem: menu_item(b"Paste\0",      "paste:",     b"v\0")];
+        let _: () = msg_send![edit_menu, addItem: menu_item(b"Select All\0", "selectAll:", b"a\0")];
+
+        let edit_item: *mut Object = msg_send![class!(NSMenuItem), new];
+        let _: () = msg_send![edit_item, setSubmenu: edit_menu];
+        let _: () = msg_send![main_menu, addItem: edit_item];
+
+        let app: *mut Object = msg_send![class!(NSApplication), sharedApplication];
+        let _: () = msg_send![app, setMainMenu: main_menu];
+    }
+}
+
 fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
     log::info!("rewriting with tone: {}", tone);
 
@@ -171,6 +223,7 @@ fn main() {
                     msg_send![class!(NSApplication), sharedApplication];
                 let _: () = msg_send![app, setActivationPolicy: 1_isize];
             }
+            setup_edit_menu();
         }
 
         if let Event::WindowEvent {

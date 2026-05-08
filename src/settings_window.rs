@@ -9,6 +9,7 @@ use crate::config::{self, Config};
 
 pub enum SettingsEvent {
     Hide,
+    Saved(Config), // carries the full saved config so main can reinit the form and recheck status
     TestResult { ok: bool, msg: String },
 }
 
@@ -19,7 +20,12 @@ pub struct SettingsWindow {
 }
 
 impl SettingsWindow {
-    pub fn show(&self) {
+    pub fn show(&self, config: &Config) {
+        let api_key_json = serde_json::to_string(&config.api_key).unwrap_or_default();
+        let model_json = serde_json::to_string(&config.model).unwrap_or_default();
+        let _ = self
+            .webview
+            .evaluate_script(&format!("init({}, {})", api_key_json, model_json));
         self.window.set_visible(true);
         self.window.set_focus();
     }
@@ -28,10 +34,17 @@ impl SettingsWindow {
         self.window.set_visible(false);
     }
 
-    pub fn poll(&self) {
+    /// Drains pending events. Returns the new API key if settings were saved,
+    /// so the caller can trigger a connection status re-check.
+    pub fn poll(&self) -> Option<Config> {
+        let mut saved = None;
         while let Ok(event) = self.rx.try_recv() {
             match event {
                 SettingsEvent::Hide => self.hide(),
+                SettingsEvent::Saved(config) => {
+                    self.hide();
+                    saved = Some(config);
+                }
                 SettingsEvent::TestResult { ok, msg } => {
                     let ok_js = if ok { "true" } else { "false" };
                     let msg_json = serde_json::to_string(&msg).unwrap_or_default();
@@ -41,6 +54,7 @@ impl SettingsWindow {
                 }
             }
         }
+        saved
     }
 }
 
@@ -113,7 +127,7 @@ fn handle_ipc(msg: &str, original_config: &Config, tx: &mpsc::Sender<SettingsEve
                     std::env::set_var("ANTHROPIC_MODEL", &new_config.model);
                 }
             }
-            let _ = tx.send(SettingsEvent::Hide);
+            let _ = tx.send(SettingsEvent::Saved(new_config));
         }
         Some("test") => {
             log::info!("settings: testing connection");

@@ -31,6 +31,23 @@ fn notify_error(message: &str) {
     }
 }
 
+fn spawn_connection_check(
+    rt: &tokio::runtime::Runtime,
+    api_key: String,
+    tx: std::sync::mpsc::Sender<&'static str>,
+) {
+    rt.spawn(async move {
+        let status = match rewrite::rewrite_with_key("hi", "Concise", &api_key).await {
+            Ok(_) => "🟢 Connected",
+            Err(e) => {
+                log::warn!("connection check failed: {}", e);
+                "🔴 Not connected"
+            }
+        };
+        let _ = tx.send(status);
+    });
+}
+
 fn handle_hotkey(rt: &tokio::runtime::Runtime, tone: &str) {
     log::info!("rewriting with tone: {}", tone);
 
@@ -119,6 +136,7 @@ fn main() {
 
     let rt = tokio::runtime::Runtime::new().expect("failed to create tokio runtime");
     let mut selected_tone: &'static str = "Professional";
+    let mut current_config = cfg.clone();
 
     let event_loop = EventLoop::new();
 
@@ -127,9 +145,14 @@ fn main() {
 
     let settings_win = settings_window::build(&event_loop, &cfg);
 
+    let (status_tx, status_rx) = std::sync::mpsc::channel::<&'static str>();
+
     if cfg.api_key.is_empty() {
         log::warn!("no API key configured — opening settings");
-        settings_win.show();
+        tray.set_status("🔴 No API key");
+        settings_win.show(&cfg);
+    } else {
+        spawn_connection_check(&rt, cfg.api_key.clone(), status_tx.clone());
     }
 
     log::info!("text-chisel running");
@@ -158,7 +181,20 @@ fn main() {
             settings_win.hide();
         }
 
-        settings_win.poll();
+        if let Some(saved) = settings_win.poll() {
+            let new_key = saved.api_key.clone();
+            current_config = saved;
+            if new_key.is_empty() {
+                tray.set_status("🔴 No API key");
+            } else {
+                tray.set_status("⏳ Checking...");
+                spawn_connection_check(&rt, new_key, status_tx.clone());
+            }
+        }
+
+        if let Ok(status) = status_rx.try_recv() {
+            tray.set_status(status);
+        }
 
         if let Ok(HotKeyEvent::RewriteTriggered) = rx.try_recv() {
             log::info!("hotkey fired");
@@ -172,7 +208,7 @@ fn main() {
             }
             if event.id == tray.settings_id {
                 log::debug!("opening settings window");
-                settings_win.show();
+                settings_win.show(&current_config);
             }
             if event.id == tray.login_id {
                 let enabling = !login_item::is_enabled();

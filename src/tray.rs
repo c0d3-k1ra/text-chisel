@@ -11,6 +11,7 @@ pub struct Tray {
     tone_items: Vec<CheckMenuItem>,
     tone_submenu: Submenu,
     login_item: CheckMenuItem,
+    status_item: MenuItem,
     _icon: tray_icon::TrayIcon,
 }
 
@@ -30,11 +31,16 @@ impl Tray {
     pub fn set_launch_at_login(&self, enabled: bool) {
         self.login_item.set_checked(enabled);
     }
+
+    pub fn set_status(&self, text: &str) {
+        self.status_item.set_text(text);
+    }
 }
 
 pub fn build(launch_at_login: bool) -> Tray {
     let icon = load_icon();
     let hotkey_item = MenuItem::new("⌘⌥R  Rewrite selected text", false, None);
+    let status_item = MenuItem::new("⏳ Checking...", false, None);
     let settings_item = MenuItem::new("Settings", true, None);
     let settings_id = settings_item.id().clone();
     let login_item = CheckMenuItem::new("Launch at Login", true, launch_at_login, None);
@@ -63,6 +69,8 @@ pub fn build(launch_at_login: bool) -> Tray {
     let menu = Menu::new();
     menu.append(&hotkey_item)
         .expect("failed to append hotkey item");
+    menu.append(&status_item)
+        .expect("failed to append status item");
     menu.append(&PredefinedMenuItem::separator())
         .expect("failed to append separator");
     menu.append(&tone_submenu)
@@ -93,6 +101,7 @@ pub fn build(launch_at_login: bool) -> Tray {
         tone_items,
         tone_submenu,
         login_item,
+        status_item,
         _icon,
     }
 }

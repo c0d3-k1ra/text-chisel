@@ -5,6 +5,7 @@
 [![macOS](https://img.shields.io/badge/macOS-12%2B-black?logo=apple)](https://www.apple.com/macos/)
 [![Rust 2024](https://img.shields.io/badge/Rust-2024%20edition-orange?logo=rust)](https://blog.rust-lang.org/2025/02/20/Rust-2024.html)
 [![GitHub release](https://img.shields.io/github/v/release/c0d3-k1ra/text-chisel)](https://github.com/c0d3-k1ra/text-chisel/releases/latest)
+[![Powered by Claude](https://img.shields.io/badge/Powered%20by-Claude%20AI-8A2BE2?logo=anthropic)](https://www.anthropic.com/)
 
 **Select text anywhere on your Mac. Press ⌘⌥R. Get it back polished.**
 

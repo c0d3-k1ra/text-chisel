@@ -1,6 +1,7 @@
 # Text Chisel
 
 [![Rust](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml/badge.svg)](https://github.com/c0d3-k1ra/text-chisel/actions/workflows/rust.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A macOS menu bar app that rewrites selected text using Claude AI. Lives in your menu bar, stays out of your way — select text anywhere, press a hotkey, get it back polished.
 
@@ -151,15 +152,17 @@ assets/
 
 ## Releasing
 
-Bump the version in `Cargo.toml`, commit, tag, and push. GitHub Actions builds the `.app`, generates release notes from commit history, and attaches it to the release automatically.
+Use the `/release` skill — it handles the changelog, version bump, signed commit, tag, and push automatically. Or manually:
 
 ```bash
-# edit Cargo.toml version, then:
-git add Cargo.toml
-git commit -m "release version x.y.z"
-git tag vx.y.z
+# edit Cargo.toml and CHANGELOG.md, then:
+git add Cargo.toml Cargo.lock CHANGELOG.md
+git commit -S -m "release version x.y.z"
+git tag -a vx.y.z -m "release vx.y.z"
 git push origin main vx.y.z
 ```
+
+GitHub Actions builds the `.app`, pulls release notes from `CHANGELOG.md`, and attaches the zip to the release automatically.
 
 ---
 

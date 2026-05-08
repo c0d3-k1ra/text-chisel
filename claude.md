@@ -12,19 +12,19 @@ A macOS menu bar app written in Rust. Select any text, press `Cmd+Option+R`, and
 ## What works today
 
 - `Cmd+Option+R` → copies selected text → calls Claude API → pastes rewritten text back
-- Five tones selectable from the menu bar: Professional, Polite, Assertive, Concise, Gen Z
-- Settings window (wry webview) — API key, model selector, test connection button
+- Five tones in a submenu ("Tone: Professional ▶") — Professional, Polite, Assertive, Concise, Gen Z
+- Connection status indicator in the menu (🟢/🔴/⏳) — checked on startup and after every save
+- Launch at Login — menu item writes a LaunchAgent plist, toggles on/off
+- Settings window (wry webview) — API key, model selector, test connection button; form resets to saved values on every open
 - Config persisted to `~/.config/text-chisel/config.toml`
 - `.app` bundle built with `cargo bundle --release`
 - No Dock icon via `LSUIElement` + `NSApplicationActivationPolicyAccessory`
 - Structured logging via `log`/`env_logger` — `RUST_LOG=debug` for verbose output
 - macOS notifications with sound (Basso) on every error, with user-friendly messages per error type
-- Unit tests for all pure logic in `rewrite.rs` and `config.rs`
-
-## What's left
-
-1. **Launch at login** — LaunchAgent plist, toggle in Settings window
-2. **GitHub Actions release** — tag → build `.app` → upload as release artifact
+- Per-tone prompts with few-shot examples baked in for all five tones
+- Unit and manual tests across all testable modules (46 passing, 6 ignored)
+- Git hooks in `.githooks/` — fmt + clippy on commit, tests on push
+- GitHub Actions CI — build → format + test → release on tag
 
 ## Project structure
 
@@ -34,9 +34,10 @@ src/
 ├── clipboard.rs       # Cmd+C to copy selection, Cmd+V to paste, restores clipboard after
 ├── hotkey.rs          # registers Cmd+Option+R globally, sends events via mpsc channel
 ├── rewrite.rs         # Claude API call — validate, build_request, call_api, parse_response
-├── prompts.rs         # system prompt and user message template
-├── tray.rs            # menu bar icon, tone checkboxes, Settings and Quit items
+├── prompts.rs         # system prompt, per-tone instructions, and few-shot examples
+├── tray.rs            # menu bar icon, tone submenu, status item, launch-at-login toggle
 ├── settings_window.rs # Settings UI via wry webview, IPC for save/test/cancel actions
+├── login_item.rs      # LaunchAgent plist — write_plist, remove_plist, enable, disable
 └── config.rs          # load/save ~/.config/text-chisel/config.toml
 assets/
 ├── icon.svg           # source icon (rendered at runtime via resvg)
@@ -57,7 +58,7 @@ assets/
 - `reqwest` — HTTP client for Claude API calls
 - `tokio` — async runtime (used for API calls only)
 - `resvg` — renders SVG icon to RGBA pixels for the tray
-- `objc` — calls `setActivationPolicy:` to hide from the Dock
+- `objc` — calls `setActivationPolicy:` to hide from Dock; sets up NSMenu for WKWebView keyboard shortcuts
 - `serde` + `toml` — config serialization
 - `anyhow` — error propagation
 - `log` + `env_logger` — structured logging
@@ -67,12 +68,14 @@ assets/
 ## macOS gotchas worth knowing
 
 1. **Clipboard settle time** — sleep 100ms after Cmd+C before reading (`COPY_SETTLE_MS`), and after writing clipboard before Cmd+V (`PASTE_SETTLE_MS`). Without this the clipboard isn't populated yet.
-2. **Clipboard restore** — `paste_text()` saves the original clipboard contents and restores them after pasting.
+2. **Clipboard restore** — `paste_text()` saves the original clipboard contents and restores them after pasting. Uses `simulate_paste()` so restore always runs even if paste simulation fails mid-way.
 3. **Accessibility permission** — `enigo` needs Accessibility access to simulate Cmd+C and Cmd+V. Without it both clipboard operations fail silently.
 4. **`Modifiers::SUPER` not `META`** — SUPER is the cross-platform name for the Cmd key in `global-hotkey`.
 5. **Dock icon reappears** — `tao` resets the activation policy during event loop init. The `setActivationPolicy:1` call must happen inside `Event::NewEvents(StartCause::Init)`, not before the loop starts.
 6. **`set_var` is unsafe** — `std::env::set_var` is called before `hotkey::run()` spawns threads. This is intentional and safe only because it happens before any threads are spawned that read those vars.
 7. **`Box::leak` in hotkey.rs** — `GlobalHotKeyManager` must stay alive for the hotkey to remain registered. Leaking it is intentional; it lives for the whole process lifetime.
+8. **WKWebView keyboard shortcuts** — apps without a standard menu bar need an NSMenu with Edit items (`cut:`, `copy:`, `paste:`, `selectAll:`) for Cmd+C/V/X/A to work in webviews. Set up in `setup_edit_menu()` called from `StartCause::Init`.
+9. **Launch at Login** — intentionally does NOT call `launchctl bootstrap` after writing the plist. Doing so with `RunAtLoad=true` spawns a second instance immediately. The plist in `~/Library/LaunchAgents/` is sufficient for macOS to pick it up at next login.
 
 ## Hotkey
 
@@ -91,7 +94,7 @@ model   = "claude-haiku-4-5-20251001"
 - Default model: `claude-haiku-4-5-20251001` (fast, cheap). Override with `claude-sonnet-4-6` for better quality.
 - API key loaded from config, falls back to `ANTHROPIC_API_KEY` env var or `.env` file.
 - Endpoint: `https://api.anthropic.com/v1/messages`
-- `rewrite_with_key()` exists separately for the Settings test connection button — it bypasses the env var so it uses the key typed in the UI before saving.
+- `rewrite_with_key()` exists separately for the Settings test connection button and the startup connection check — it bypasses the env var so it uses a key directly.
 
 ## Error notifications
 
@@ -113,7 +116,7 @@ Mapped messages:
 
 - Pure logic tests are inline `#[cfg(test)]` blocks in each module file. No separate test files.
 - Tests that need hardware (clipboard, keyboard, real API) are marked `#[ignore = "reason"]` and run manually with `cargo test -- --ignored`.
-- Covered: `rewrite::validate`, `rewrite::build_request`, `rewrite::parse_response`, `config` round-trip, missing file, malformed TOML, hotkey modifiers.
+- Covered: `rewrite`, `config`, `prompts`, `login_item` (xml_escape, write_plist, remove_plist), `settings_window` (build_html, handle_ipc, config_from_save_payload), `tray` (TONES constant), `hotkey` (modifiers).
 
 ```bash
 cargo test                   # run all non-ignored tests
@@ -126,4 +129,15 @@ cargo test -- --ignored      # run hardware-dependent tests manually
 cargo run                    # dev run
 RUST_LOG=debug cargo run     # verbose logging
 cargo bundle --release       # build .app bundle
+```
+
+## Releasing
+
+Bump `version` in `Cargo.toml`, commit, tag, push. CI verifies the tag matches the version, builds the `.app`, and creates a GitHub Release with auto-generated notes.
+
+```bash
+git add Cargo.toml
+git commit -m "release version x.y.z"
+git tag vx.y.z
+git push origin main vx.y.z
 ```

@@ -18,7 +18,7 @@ No copy-paste. No switching windows. No context lost.
 
 ## Tones
 
-Pick a tone from the menu bar icon at any time:
+Pick a tone from **menu bar icon → Tone**:
 
 | Tone | What it does |
 | ---- | ------------ |
@@ -27,6 +27,8 @@ Pick a tone from the menu bar icon at any time:
 | **Assertive** | Direct and firm — makes the point land |
 | **Concise** | Strips it down — no filler, no fluff |
 | **Gen Z** | Casual and internet-native — lowercase, emojis, the whole bit |
+
+The active tone is shown in the submenu title (e.g. "Tone: Concise ▶") so you can always see your selection without opening it.
 
 ---
 
@@ -86,12 +88,24 @@ Settings are saved to `~/.config/text-chisel/config.toml`.
 
 ---
 
+## Menu bar
+
+The menu bar icon shows:
+
+- **Connection status** — 🟢 Connected, 🔴 Not connected, or ⏳ Checking... (checked on startup and after every settings save)
+- **Tone submenu** — active tone shown in the title, all five tones selectable
+- **Launch at Login** — toggle to start Text Chisel automatically on login
+- **Settings** — open the settings window
+- **Quit**
+
+---
+
 ## Error notifications
 
 When something goes wrong, Text Chisel shows a macOS notification with a Basso sound so you always know what happened:
 
 | Situation | Message |
-|-----------|---------|
+| --------- | ------- |
 | Nothing selected | Select some text first, then press ⌘⌥R |
 | No API key | Add your Anthropic API key in Settings to get started |
 | Invalid API key | API key not accepted. Open Settings to update it |
@@ -122,14 +136,29 @@ src/
 ├── clipboard.rs       # Cmd+C to read selection, Cmd+V to paste back
 ├── hotkey.rs          # global Cmd+Option+R registration
 ├── rewrite.rs         # Claude API call and response parsing
-├── prompts.rs         # system and user prompt templates
-├── tray.rs            # menu bar icon and tone menu
+├── prompts.rs         # system prompt and per-tone instructions with few-shot examples
+├── tray.rs            # menu bar icon, tone submenu, status item, launch at login
 ├── settings_window.rs # settings UI (wry webview)
+├── login_item.rs      # LaunchAgent plist — enable/disable launch at login
 └── config.rs          # load/save ~/.config/text-chisel/config.toml
 assets/
 ├── icon.svg           # menu bar icon source
 ├── icon.icns          # compiled macOS icon for .app bundle
 └── settings.html      # settings window UI
+```
+
+---
+
+## Releasing
+
+Bump the version in `Cargo.toml`, commit, tag, and push. GitHub Actions builds the `.app`, generates release notes from commit history, and attaches it to the release automatically.
+
+```bash
+# edit Cargo.toml version, then:
+git add Cargo.toml
+git commit -m "release version x.y.z"
+git tag vx.y.z
+git push origin main vx.y.z
 ```
 
 ---

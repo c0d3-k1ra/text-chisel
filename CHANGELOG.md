@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3.1 — 2026-05-12
+
+### Internal
+
+- Moved agent skills to `.claude/skills/` and renamed `claude.md` to `CLAUDE.md`
+- Bumped dependencies: toml 0.8 → 1.1, resvg 0.44 → 0.47, tokio 1.52.1 → 1.52.3
+
 ## v1.3.0 — 2026-05-08
 
 ### Changed

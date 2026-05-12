@@ -146,7 +146,7 @@ CI verifies the tag matches the version, builds the `.app`, and creates a GitHub
 
 ## Agent skills
 
-Skills live in `.agents/skills/` and work with Claude Code (via `SKILL.md`) and Codex-style agents (via `AGENTS.md`).
+Skills live in `.claude/skills/` and are loaded by Claude Code via `SKILL.md`.
 
 | Skill | Invoke | Purpose |
 | --- | --- | --- |

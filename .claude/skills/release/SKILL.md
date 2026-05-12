@@ -20,14 +20,7 @@ Last release tag: `!`git describe --tags --abbrev=0 2>/dev/null || echo "none"``
 Current version (Cargo.toml): `!`grep '^version' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/'``
 
 Commits since last release:
-```!
-LAST=$(git describe --tags --abbrev=0 2>/dev/null)
-if [ -n "$LAST" ]; then
-  git log "${LAST}..HEAD" --format="  %s (%h)" --reverse
-else
-  git log --format="  %s (%h)" --reverse
-fi
-```
+`!`{ LAST=$(git describe --tags --abbrev=0 2>/dev/null); [ -n "$LAST" ] && git log "${LAST}..HEAD" --format="  %s (%h)" --reverse || git log --format="  %s (%h)" --reverse; }``
 
 ---
 
